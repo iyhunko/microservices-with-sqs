@@ -4,11 +4,10 @@ import "context"
 
 // Repository defines the interface for a generic repository that can manage resources.
 type Repository interface {
-	Create(ctx context.Context, resource Resource) error
-	List(ctx context.Context, result any, query Query) error
-	Delete(ctx context.Context, resource Resource) error
-	Find(ctx context.Context, resource Resource) (bool, error)
-	Patch(ctx context.Context, resource Resource) (bool, error)
+	Create(ctx context.Context, resource Resource) (result Resource, err error)
+	List(ctx context.Context, query Query) (result []Resource, err error)
+	DeleteByID(ctx context.Context, resource Resource) error
+	FindByID(ctx context.Context, resource Resource) (result Resource, err error) // find one
 }
 
 // Resource represents a generic resource that can be managed by the repository.

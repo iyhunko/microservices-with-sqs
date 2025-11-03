@@ -13,6 +13,10 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+const (
+	pqUniqueViolationErrCode = "23505" // PostgreSQL unique violation error code. See https://www.postgresql.org/docs/14/errcodes-appendix.html
+)
+
 func StartDB(ctx context.Context, dbConf config.DB) (*sql.DB, error) {
 	dbCon, err := startDBConnection(dbConf)
 	if err != nil {
