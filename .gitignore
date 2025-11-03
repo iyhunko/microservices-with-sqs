@@ -1,0 +1,26 @@
+*.tmp
+# test binary, built with `go test -c`
+*.test
+# output of the go coverage tool
+*.out
+cover.html
+/bin/
+
+# GO workspace files
+go.work
+.idea
+.vscode
+.DS_Store
+
+vendor/
+junit.xml
+
+.env
+
+.srl
+.csr
+.pem
+
+/psql
+
+
