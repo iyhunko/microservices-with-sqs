@@ -7,15 +7,15 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
-	Email     string    `gorm:"column:email;uniqueIndex"`
-	Password  string    `gorm:"column:password"`
-	Name      string    `gorm:"column:name"`
-	Region    string    `gorm:"column:region"`
-	Status    string    `gorm:"column:status"`
-	Role      string    `gorm:"column:role"`
-	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
-	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	ID        uuid.UUID `gorm:"column:id;primaryKey" db:"id"`
+	Email     string    `gorm:"column:email" db:"email"`
+	Password  string    `gorm:"column:password" db:"password"`
+	Name      string    `gorm:"column:name" db:"name"`
+	Region    string    `gorm:"column:region" db:"region"`
+	Status    string    `gorm:"column:status" db:"status"`
+	Role      string    `gorm:"column:role" db:"role"`
+	UpdatedAt time.Time `gorm:"column:updated_at" db:"updated_at"`
+	CreatedAt time.Time `gorm:"column:created_at" db:"created_at"`
 }
 
 func (t *User) TableName() string {
@@ -24,4 +24,6 @@ func (t *User) TableName() string {
 
 func (t *User) InitMeta() {
 	t.ID = uuid.New()
+	t.CreatedAt = time.Now()
+	t.UpdatedAt = time.Now()
 }
