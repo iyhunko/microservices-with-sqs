@@ -400,6 +400,14 @@ func isZeroValue(v interface{}) bool {
 		return true
 	}
 	
+	// Special handling for UUID and time.Time before reflection
+	if uid, ok := v.(uuid.UUID); ok {
+		return uid == uuid.Nil
+	}
+	if t, ok := v.(time.Time); ok {
+		return t.IsZero()
+	}
+	
 	val := reflect.ValueOf(v)
 	switch val.Kind() {
 	case reflect.String:
@@ -412,15 +420,6 @@ func isZeroValue(v interface{}) bool {
 		return val.Float() == 0
 	case reflect.Bool:
 		return !val.Bool()
-	case reflect.Struct:
-		// Special handling for UUID and time.Time
-		if _, ok := v.(uuid.UUID); ok {
-			return v.(uuid.UUID) == uuid.Nil
-		}
-		if t, ok := v.(time.Time); ok {
-			return t.IsZero()
-		}
-		return false
 	default:
 		return false
 	}
