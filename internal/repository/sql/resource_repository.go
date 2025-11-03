@@ -9,7 +9,6 @@ import (
 	"github.com/iyhunko/microservices-with-sqs/internal/repository"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 const (
@@ -94,29 +93,4 @@ func (r ResourceRepository) Patch(ctx context.Context, resource repository.Resou
 	}
 
 	return db.RowsAffected > 0, nil
-}
-
-// Transaction will give transaction locking on particular rows.
-// txFunc is a type where we can define transaction logic.
-// if txFunc return no error then transaction will be committed.
-// else if txFunc return error then transaction will be rolled back.
-// Note: don't use goroutines inside txFunc.
-func (r ResourceRepository) Transaction(ctx context.Context, txFunc repository.TransactionFunc) error {
-	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		errorChan := make(chan error)
-		go func() {
-			errorChan <- txFunc(ctx, NewRepository(tx.Clauses(clause.Locking{Strength: "UPDATE"})))
-		}()
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case err := <-errorChan:
-			return err
-		}
-	})
-	if err != nil {
-		return fmt.Errorf("transaction failed: %w", err)
-	}
-	return nil
 }
