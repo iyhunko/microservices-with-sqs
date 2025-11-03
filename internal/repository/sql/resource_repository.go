@@ -66,6 +66,27 @@ func getTableName(resource repository.Resource) string {
 	return strings.ToLower(name) + "s"
 }
 
+// getColumnName extracts the column name from struct field tag
+func getColumnName(field reflect.StructField) string {
+	// Check gorm tag first
+	gormTag := field.Tag.Get("gorm")
+	if gormTag != "" {
+		for _, part := range strings.Split(gormTag, ";") {
+			if strings.HasPrefix(part, "column:") {
+				return strings.TrimPrefix(part, "column:")
+			}
+		}
+	}
+	
+	// Check db tag
+	if dbTag := field.Tag.Get("db"); dbTag != "" {
+		return dbTag
+	}
+	
+	// Default to lowercase field name
+	return strings.ToLower(field.Name)
+}
+
 // getFieldsAndValues extracts struct fields and values using reflection
 func getFieldsAndValues(resource repository.Resource) ([]string, []interface{}) {
 	var fields []string
@@ -81,33 +102,29 @@ func getFieldsAndValues(resource repository.Resource) ([]string, []interface{}) 
 		field := t.Field(i)
 		value := v.Field(i)
 		
-		// Get column name from gorm tag or use field name
-		columnName := field.Tag.Get("gorm")
-		if columnName != "" {
-			// Extract column name from gorm tag
-			for _, part := range strings.Split(columnName, ";") {
-				if strings.HasPrefix(part, "column:") {
-					columnName = strings.TrimPrefix(part, "column:")
-					break
-				}
-			}
-		} else {
-			columnName = strings.ToLower(field.Name)
-		}
-		
-		// Skip fields with primaryKey in gorm tag for updates
-		if strings.Contains(field.Tag.Get("gorm"), "primaryKey") {
-			// Still include for inserts
-			fields = append(fields, columnName)
-			values = append(values, value.Interface())
-			continue
-		}
-		
+		columnName := getColumnName(field)
 		fields = append(fields, columnName)
 		values = append(values, value.Interface())
 	}
 	
 	return fields, values
+}
+
+// getColumnNames returns ordered list of column names for a type
+func getColumnNames(resource repository.Resource) []string {
+	var columns []string
+	
+	v := reflect.ValueOf(resource)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	t := v.Type()
+	
+	for i := 0; i < t.NumField(); i++ {
+		columns = append(columns, getColumnName(t.Field(i)))
+	}
+	
+	return columns
 }
 
 // getPrimaryKey extracts the primary key field and value
@@ -121,14 +138,7 @@ func getPrimaryKey(resource repository.Resource) (string, interface{}) {
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
 		if strings.Contains(field.Tag.Get("gorm"), "primaryKey") {
-			columnName := field.Tag.Get("gorm")
-			for _, part := range strings.Split(columnName, ";") {
-				if strings.HasPrefix(part, "column:") {
-					columnName = strings.TrimPrefix(part, "column:")
-					return columnName, v.Field(i).Interface()
-				}
-			}
-			return strings.ToLower(field.Name), v.Field(i).Interface()
+			return getColumnName(field), v.Field(i).Interface()
 		}
 	}
 	
@@ -236,8 +246,18 @@ func (r ResourceRepository) List(ctx context.Context, result any, query reposito
 		query.Limit = repository.DefaultPaginationLimit
 	}
 	
+	// Get column names for explicit selection
+	var tempResource repository.Resource
+	if elemType.Kind() == reflect.Ptr {
+		tempResource = reflect.New(elemType.Elem()).Interface().(repository.Resource)
+	} else {
+		tempResource = reflect.New(elemType).Interface().(repository.Resource)
+	}
+	columns := getColumnNames(tempResource)
+	
 	sqlQuery := fmt.Sprintf(
-		"SELECT * FROM %s %s ORDER BY %s DESC, %s LIMIT $%d",
+		"SELECT %s FROM %s %s ORDER BY %s DESC, %s LIMIT $%d",
+		strings.Join(columns, ", "),
 		tableName,
 		whereClause,
 		repository.CreatedAtField,
@@ -264,7 +284,7 @@ func (r ResourceRepository) List(ctx context.Context, result any, query reposito
 			elem = reflect.New(elemType)
 		}
 		
-		// Get scan destinations
+		// Get scan destinations in order matching columns
 		scanDest := make([]interface{}, 0)
 		elemValue := elem
 		if elemValue.Kind() == reflect.Ptr {
@@ -310,15 +330,17 @@ func (r ResourceRepository) Delete(ctx context.Context, resource repository.Reso
 func (r ResourceRepository) Find(ctx context.Context, resource repository.Resource) (bool, error) {
 	tableName := getTableName(resource)
 	pkField, pkValue := getPrimaryKey(resource)
+	columns := getColumnNames(resource)
 	
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = $1 LIMIT 1", tableName, pkField)
+	query := fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1 LIMIT 1", 
+		strings.Join(columns, ", "), tableName, pkField)
 	
 	v := reflect.ValueOf(resource)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
 	
-	// Get scan destinations
+	// Get scan destinations in order matching columns
 	scanDest := make([]interface{}, 0)
 	for i := 0; i < v.NumField(); i++ {
 		scanDest = append(scanDest, v.Field(i).Addr().Interface())
@@ -339,24 +361,42 @@ func (r ResourceRepository) Find(ctx context.Context, resource repository.Resour
 func (r ResourceRepository) Patch(ctx context.Context, resource repository.Resource) (bool, error) {
 	tableName := getTableName(resource)
 	pkField, pkValue := getPrimaryKey(resource)
-	fields, values := getFieldsAndValues(resource)
 	
-	// Build UPDATE query, excluding primary key from SET clause
+	v := reflect.ValueOf(resource)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	t := v.Type()
+	
+	// Build UPDATE query, excluding primary key and zero values from SET clause
 	var setClauses []string
 	var setValues []interface{}
 	argIndex := 1
+	var updatedAtField string
 	
-	for i, field := range fields {
-		if field == pkField {
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		value := v.Field(i)
+		columnName := getColumnName(field)
+		
+		// Skip primary key
+		if columnName == pkField {
 			continue
 		}
+		
+		// Track updated_at field for later
+		if columnName == "updated_at" {
+			updatedAtField = columnName
+			continue
+		}
+		
 		// Skip zero values for patch (similar to GORM Updates behavior)
-		value := values[i]
-		if isZeroValue(value) {
+		if isZeroValue(value.Interface()) {
 			continue
 		}
-		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", field, argIndex))
-		setValues = append(setValues, value)
+		
+		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", columnName, argIndex))
+		setValues = append(setValues, value.Interface())
 		argIndex++
 	}
 	
@@ -364,10 +404,12 @@ func (r ResourceRepository) Patch(ctx context.Context, resource repository.Resou
 		return false, nil
 	}
 	
-	// Add updated_at field
-	setClauses = append(setClauses, fmt.Sprintf("updated_at = $%d", argIndex))
-	setValues = append(setValues, time.Now())
-	argIndex++
+	// Add updated_at field if it exists
+	if updatedAtField != "" {
+		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", updatedAtField, argIndex))
+		setValues = append(setValues, time.Now())
+		argIndex++
+	}
 	
 	// Add WHERE clause for primary key
 	setValues = append(setValues, pkValue)
