@@ -19,12 +19,12 @@ type ProductRepository struct {
 }
 
 // NewProductRepository creates a new ProductRepository instance.
-func NewProductRepository(db *sql.DB) repository.Repository {
+func NewProductRepository(db *sql.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
 // NewProductRepositoryWithTx creates a new ProductRepository instance with an existing transaction.
-func NewProductRepositoryWithTx(db *sql.DB, tx *sql.Tx) repository.Repository {
+func NewProductRepositoryWithTx(db *sql.DB, tx *sql.Tx) *ProductRepository {
 	return &ProductRepository{db: db, txn: tx}
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -35,6 +36,7 @@ type ProductMessage struct {
 func (p *Publisher) PublishProductMessage(ctx context.Context, msg ProductMessage) error {
 	messageBody, err := json.Marshal(msg)
 	if err != nil {
+		slog.Error("Failed to marshal message", slog.Any("err", err), slog.Any("msg", msg))
 		return fmt.Errorf("failed to marshal message: %w", err)
 	}
 
@@ -43,6 +45,7 @@ func (p *Publisher) PublishProductMessage(ctx context.Context, msg ProductMessag
 		MessageBody: aws.String(string(messageBody)),
 	})
 	if err != nil {
+		slog.Error("Failed to send message to SQS", slog.Any("err", err), slog.String("queue_url", p.queueURL))
 		return fmt.Errorf("failed to send message to SQS: %w", err)
 	}
 

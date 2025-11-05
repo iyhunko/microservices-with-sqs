@@ -18,7 +18,7 @@ func TestEventRepository_UpdateStatus(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	repo := NewEventRepository(db).(*EventRepository)
+	repo := NewEventRepository(db)
 	ctx := context.Background()
 
 	t.Run("successful status update to processed", func(t *testing.T) {

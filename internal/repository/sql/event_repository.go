@@ -20,12 +20,12 @@ type EventRepository struct {
 }
 
 // NewEventRepository creates a new EventRepository instance.
-func NewEventRepository(db *sql.DB) repository.Repository {
+func NewEventRepository(db *sql.DB) *EventRepository {
 	return &EventRepository{db: db}
 }
 
 // NewEventRepositoryWithTx creates a new EventRepository instance with an existing transaction.
-func NewEventRepositoryWithTx(db *sql.DB, tx *sql.Tx) repository.Repository {
+func NewEventRepositoryWithTx(db *sql.DB, tx *sql.Tx) *EventRepository {
 	return &EventRepository{db: db, txn: tx}
 }
 
