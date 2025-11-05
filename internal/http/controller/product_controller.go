@@ -1,26 +1,22 @@
 package controller
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/iyhunko/microservices-with-sqs/internal/metrics"
 	"github.com/iyhunko/microservices-with-sqs/internal/model"
 	"github.com/iyhunko/microservices-with-sqs/internal/repository"
-	"github.com/iyhunko/microservices-with-sqs/internal/sqs"
+	"github.com/iyhunko/microservices-with-sqs/internal/service"
 )
 
 type ProductController struct {
-	repo      repository.Repository
-	publisher *sqs.Publisher
+	productService *service.ProductService
 }
 
-func NewProductController(repo repository.Repository, publisher *sqs.Publisher) *ProductController {
+func NewProductController(productService *service.ProductService) *ProductController {
 	return &ProductController{
-		repo:      repo,
-		publisher: publisher,
+		productService: productService,
 	}
 }
 
@@ -46,35 +42,10 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 		return
 	}
 
-	product := &model.Product{
-		Name:        req.Name,
-		Description: req.Description,
-		Price:       req.Price,
-	}
-
-	created, err := pc.repo.Create(c.Request.Context(), product)
+	createdProduct, err := pc.productService.CreateProduct(c.Request.Context(), req.Name, req.Description, req.Price)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create product"})
 		return
-	}
-
-	createdProduct := created.(*model.Product)
-
-	// Increment metrics
-	metrics.ProductsCreated.Inc()
-
-	// Send message to SQS
-	if pc.publisher != nil {
-		msg := sqs.ProductMessage{
-			Action:    "created",
-			ProductID: createdProduct.ID.String(),
-			Name:      createdProduct.Name,
-			Price:     createdProduct.Price,
-		}
-		if err := pc.publisher.PublishProductMessage(c.Request.Context(), msg); err != nil {
-			// Log error but don't fail the request
-			slog.Error("Failed to send SQS message", slog.Any("err", err), slog.String("action", "created"), slog.String("product_id", createdProduct.ID.String()))
-		}
 	}
 
 	c.JSON(http.StatusCreated, toProductResponse(createdProduct))
@@ -88,36 +59,9 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 		return
 	}
 
-	// Find the product first to get its details for the message
-	resource, err := pc.repo.FindByID(c.Request.Context(), id)
-	if err != nil {
+	if err := pc.productService.DeleteProduct(c.Request.Context(), id); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "product not found"})
 		return
-	}
-
-	product := resource.(*model.Product)
-
-	// Delete the product
-	if err := pc.repo.DeleteByID(c.Request.Context(), product); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete product"})
-		return
-	}
-
-	// Increment metrics
-	metrics.ProductsDeleted.Inc()
-
-	// Send message to SQS
-	if pc.publisher != nil {
-		msg := sqs.ProductMessage{
-			Action:    "deleted",
-			ProductID: product.ID.String(),
-			Name:      product.Name,
-			Price:     product.Price,
-		}
-		if err := pc.publisher.PublishProductMessage(c.Request.Context(), msg); err != nil {
-			// Log error but don't fail the request
-			slog.Error("Failed to send SQS message", slog.Any("err", err), slog.String("action", "deleted"), slog.String("product_id", product.ID.String()))
-		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "product deleted successfully"})
@@ -146,7 +90,7 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 		return
 	}
 
-	resources, err := pc.repo.List(c.Request.Context(), *query)
+	resources, err := pc.productService.ListProducts(c.Request.Context(), *query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list products"})
 		return
