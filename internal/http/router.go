@@ -13,13 +13,11 @@ func InitRouter(config *config.Config, repo repository.Repository, server *gin.E
 	server.GET("/ping", ctr.Ping)
 
 	// Product endpoints
-	if productCtr != nil {
-		products := server.Group("/products")
-		{
-			products.POST("", productCtr.CreateProduct)
-			products.GET("", productCtr.ListProducts)
-			products.DELETE("/:id", productCtr.DeleteProduct)
-		}
+	products := server.Group("/products")
+	{
+		products.POST("", productCtr.CreateProduct)
+		products.GET("", productCtr.ListProducts)
+		products.DELETE("/:id", productCtr.DeleteProduct)
 	}
 
 	return server
