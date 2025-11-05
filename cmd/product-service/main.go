@@ -16,6 +16,7 @@ import (
 	httpAPI "github.com/iyhunko/microservices-with-sqs/internal/http"
 	"github.com/iyhunko/microservices-with-sqs/internal/http/controller"
 	"github.com/iyhunko/microservices-with-sqs/internal/repository/sql"
+	"github.com/iyhunko/microservices-with-sqs/internal/service"
 	sqspkg "github.com/iyhunko/microservices-with-sqs/internal/sqs"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -33,25 +34,25 @@ func main() {
 	productRepository := sql.NewProductRepository(db)
 
 	// Initialize AWS SQS client
-	var sqsPublisher *sqspkg.Publisher
-	if conf.AWS.SQSQueueURL != "" {
-		awsCfg, err := awsconfig.LoadDefaultConfig(ctx,
-			awsconfig.WithRegion(conf.AWS.Region),
-		)
-		handleErr("loading AWS config", err)
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx,
+		awsconfig.WithRegion(conf.AWS.Region),
+	)
+	handleErr("loading AWS config", err)
 
-		// Override endpoint for LocalStack if specified
-		if conf.AWS.Endpoint != "" {
-			awsCfg.BaseEndpoint = aws.String(conf.AWS.Endpoint)
-		}
-
-		sqsClient := sqs.NewFromConfig(awsCfg)
-		sqsPublisher = sqspkg.NewPublisher(sqsClient, conf.AWS.SQSQueueURL)
+	// Override endpoint for LocalStack if specified
+	if conf.AWS.Endpoint != "" {
+		awsCfg.BaseEndpoint = aws.String(conf.AWS.Endpoint)
 	}
+
+	sqsClient := sqs.NewFromConfig(awsCfg)
+	sqsPublisher := sqspkg.NewPublisher(sqsClient, conf.AWS.SQSQueueURL)
+
+	// Create services
+	productService := service.NewProductService(productRepository, sqsPublisher)
 
 	// Start HTTP server
 	ctr := controller.New(conf, userRepository)
-	productCtr := controller.NewProductController(productRepository, sqsPublisher)
+	productCtr := controller.NewProductController(productService)
 	httpServer := gin.Default()
 	httpServer = httpAPI.InitRouter(conf, userRepository, httpServer, ctr, productCtr)
 
