@@ -67,7 +67,10 @@ func (r *ProductRepository) Create(ctx context.Context, resource repository.Reso
 		return nil, errors.New("resource must be a *model.Product")
 	}
 
-	product.InitMeta()
+	// Only initialize metadata if not already set
+	if product.ID == uuid.Nil {
+		product.InitMeta()
+	}
 
 	query := `INSERT INTO products (id, name, description, price, created_at, updated_at) 
 	          VALUES ($1, $2, $3, $4, $5, $6)`

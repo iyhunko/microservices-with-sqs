@@ -55,7 +55,8 @@ func main() {
 	productService := service.NewProductServiceWithOutbox(productRepository, transactionalRepository, sqsPublisher)
 
 	// Start outbox worker to process pending events every 2 seconds
-	outboxWorker := service.NewOutboxWorker(eventRepository.(*sql.EventRepository), sqsPublisher, 2*time.Second)
+	// EventRepository implements both Repository and EventStatusUpdater interfaces
+	outboxWorker := service.NewOutboxWorker(eventRepository, eventRepository.(*sql.EventRepository), sqsPublisher, 2*time.Second)
 	go outboxWorker.Start(ctx)
 
 	// Start HTTP server

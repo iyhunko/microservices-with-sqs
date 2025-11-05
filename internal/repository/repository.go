@@ -21,6 +21,11 @@ type Repository interface {
 	WithinTransaction(ctx context.Context, fn func(repo Repository) error) error
 }
 
+// EventStatusUpdater defines the interface for updating event status
+type EventStatusUpdater interface {
+	UpdateStatus(ctx context.Context, eventID uuid.UUID, status interface{}) error
+}
+
 // Resource represents a generic resource that can be managed by the repository.
 type Resource interface {
 	InitMeta()

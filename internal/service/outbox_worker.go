@@ -8,25 +8,26 @@ import (
 
 	"github.com/iyhunko/microservices-with-sqs/internal/model"
 	"github.com/iyhunko/microservices-with-sqs/internal/repository"
-	reposql "github.com/iyhunko/microservices-with-sqs/internal/repository/sql"
 	"github.com/iyhunko/microservices-with-sqs/internal/sqs"
 )
 
 // OutboxWorker polls the events table and processes pending events
 type OutboxWorker struct {
-	eventRepo *reposql.EventRepository
-	publisher *sqs.Publisher
-	interval  time.Duration
-	stopChan  chan struct{}
+	eventRepo      repository.Repository
+	eventUpdater   repository.EventStatusUpdater
+	publisher      *sqs.Publisher
+	interval       time.Duration
+	stopChan       chan struct{}
 }
 
 // NewOutboxWorker creates a new OutboxWorker
-func NewOutboxWorker(eventRepo *reposql.EventRepository, publisher *sqs.Publisher, interval time.Duration) *OutboxWorker {
+func NewOutboxWorker(eventRepo repository.Repository, eventUpdater repository.EventStatusUpdater, publisher *sqs.Publisher, interval time.Duration) *OutboxWorker {
 	return &OutboxWorker{
-		eventRepo: eventRepo,
-		publisher: publisher,
-		interval:  interval,
-		stopChan:  make(chan struct{}),
+		eventRepo:    eventRepo,
+		eventUpdater: eventUpdater,
+		publisher:    publisher,
+		interval:     interval,
+		stopChan:     make(chan struct{}),
 	}
 }
 
@@ -88,14 +89,14 @@ func (w *OutboxWorker) processEvents(ctx context.Context) {
 				slog.Any("err", err))
 
 			// Mark event as failed
-			if updateErr := w.eventRepo.UpdateStatus(ctx, event.ID, model.EventStatusFailed); updateErr != nil {
+			if updateErr := w.eventUpdater.UpdateStatus(ctx, event.ID, model.EventStatusFailed); updateErr != nil {
 				slog.Error("Failed to update event status to failed",
 					slog.String("event_id", event.ID.String()),
 					slog.Any("err", updateErr))
 			}
 		} else {
 			// Mark event as processed
-			if updateErr := w.eventRepo.UpdateStatus(ctx, event.ID, model.EventStatusProcessed); updateErr != nil {
+			if updateErr := w.eventUpdater.UpdateStatus(ctx, event.ID, model.EventStatusProcessed); updateErr != nil {
 				slog.Error("Failed to update event status to processed",
 					slog.String("event_id", event.ID.String()),
 					slog.Any("err", updateErr))

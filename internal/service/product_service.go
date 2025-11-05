@@ -49,10 +49,13 @@ func (ps *ProductService) CreateProduct(ctx context.Context, name, description s
 
 	// Use outbox pattern if transactional repository is available
 	if ps.txRepo != nil {
-		// Prepare event data
+		// Create product with metadata initialized
+		product.InitMeta()
+
+		// Prepare event data with the product ID
 		eventData := sqs.ProductMessage{
 			Action:    "created",
-			ProductID: "", // Will be set after product creation
+			ProductID: product.ID.String(),
 			Name:      name,
 			Price:     price,
 		}

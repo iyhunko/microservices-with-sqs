@@ -20,6 +20,7 @@ func NewTransactionalRepository(db *sql.DB) *TransactionalRepository {
 }
 
 // CreateProductWithEvent creates a product and an event in a single transaction
+// The eventDataUpdater function is called with the created product to update the event data
 func (tr *TransactionalRepository) CreateProductWithEvent(ctx context.Context, product *model.Product, event *model.Event) (*model.Product, error) {
 	tx, err := tr.db.BeginTx(ctx, nil)
 	if err != nil {

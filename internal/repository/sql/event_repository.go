@@ -198,7 +198,12 @@ func (r *EventRepository) DeleteByID(ctx context.Context, resource repository.Re
 }
 
 // UpdateStatus updates the status and processed_at time of an event
-func (r *EventRepository) UpdateStatus(ctx context.Context, eventID uuid.UUID, status model.EventStatus) error {
+func (r *EventRepository) UpdateStatus(ctx context.Context, eventID uuid.UUID, status interface{}) error {
+	eventStatus, ok := status.(model.EventStatus)
+	if !ok {
+		return fmt.Errorf("status must be of type model.EventStatus")
+	}
+
 	query := `UPDATE events SET status = $1, processed_at = CURRENT_TIMESTAMP WHERE id = $2`
 
 	executor := r.getExecutor()
@@ -208,7 +213,7 @@ func (r *EventRepository) UpdateStatus(ctx context.Context, eventID uuid.UUID, s
 	}
 	defer stmt.Close()
 
-	_, err = stmt.ExecContext(ctx, status, eventID)
+	_, err = stmt.ExecContext(ctx, eventStatus, eventID)
 	if err != nil {
 		return fmt.Errorf("failed to update event status: %w", err)
 	}
