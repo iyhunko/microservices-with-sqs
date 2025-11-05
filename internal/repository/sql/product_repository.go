@@ -12,14 +12,60 @@ import (
 	"github.com/iyhunko/microservices-with-sqs/internal/repository"
 )
 
+// dbExecutor is an interface that represents either *sql.DB or *sql.Tx
+type dbExecutor interface {
+	PrepareContext(ctx context.Context, query string) (*sql.Stmt, error)
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
+}
+
 // ProductRepository implements the Repository interface for Product entities.
 type ProductRepository struct {
-	db *sql.DB
+	db  *sql.DB
+	txn *sql.Tx
 }
 
 // NewProductRepository creates a new ProductRepository instance.
 func NewProductRepository(db *sql.DB) repository.Repository {
 	return &ProductRepository{db: db}
+}
+
+// getExecutor returns the active executor (transaction if exists, otherwise db)
+func (r *ProductRepository) getExecutor() dbExecutor {
+	if r.txn != nil {
+		return r.txn
+	}
+	return r.db
+}
+
+// WithinTransaction executes a function within a database transaction
+func (r *ProductRepository) WithinTransaction(ctx context.Context, fn func(repo repository.Repository) error) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	// Create a new repository instance with the transaction
+	txRepo := &ProductRepository{
+		db:  r.db,
+		txn: tx,
+	}
+
+	// Execute the function with the transactional repository
+	if err := fn(txRepo); err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return fmt.Errorf("failed to rollback transaction: %w (original error: %v)", rbErr, err)
+		}
+		return err
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 // Create inserts a new product into the database.
@@ -34,7 +80,8 @@ func (r *ProductRepository) Create(ctx context.Context, resource repository.Reso
 	query := `INSERT INTO products (id, name, description, price, created_at, updated_at) 
 	          VALUES ($1, $2, $3, $4, $5, $6)`
 
-	stmt, err := r.db.PrepareContext(ctx, query)
+	executor := r.getExecutor()
+	stmt, err := executor.PrepareContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare insert statement: %w", err)
 	}
@@ -74,7 +121,8 @@ func (r *ProductRepository) List(ctx context.Context, query repository.Query) ([
 	queryBuilder.WriteString(fmt.Sprintf(" LIMIT $%d", argIndex))
 	args = append(args, limit)
 
-	stmt, err := r.db.PrepareContext(ctx, queryBuilder.String())
+	executor := r.getExecutor()
+	stmt, err := executor.PrepareContext(ctx, queryBuilder.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare select statement: %w", err)
 	}
@@ -107,7 +155,8 @@ func (r *ProductRepository) List(ctx context.Context, query repository.Query) ([
 func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (repository.Resource, error) {
 	query := `SELECT * FROM products WHERE id = $1`
 
-	stmt, err := r.db.PrepareContext(ctx, query)
+	executor := r.getExecutor()
+	stmt, err := executor.PrepareContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare select statement: %w", err)
 	}
@@ -136,7 +185,8 @@ func (r *ProductRepository) DeleteByID(ctx context.Context, resource repository.
 
 	query := `DELETE FROM products WHERE id = $1`
 
-	stmt, err := r.db.PrepareContext(ctx, query)
+	executor := r.getExecutor()
+	stmt, err := executor.PrepareContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("failed to prepare delete statement: %w", err)
 	}

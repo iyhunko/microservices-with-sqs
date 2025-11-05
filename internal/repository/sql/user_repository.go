@@ -15,12 +15,50 @@ import (
 
 // UserRepository implements the Repository interface for User entities.
 type UserRepository struct {
-	db *sql.DB
+	db  *sql.DB
+	txn *sql.Tx
 }
 
 // NewUserRepository creates a new UserRepository instance.
 func NewUserRepository(db *sql.DB) repository.Repository {
 	return &UserRepository{db: db}
+}
+
+// getExecutor returns the active executor (transaction if exists, otherwise db)
+func (r *UserRepository) getExecutor() dbExecutor {
+	if r.txn != nil {
+		return r.txn
+	}
+	return r.db
+}
+
+// WithinTransaction executes a function within a database transaction
+func (r *UserRepository) WithinTransaction(ctx context.Context, fn func(repo repository.Repository) error) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	// Create a new repository instance with the transaction
+	txRepo := &UserRepository{
+		db:  r.db,
+		txn: tx,
+	}
+
+	// Execute the function with the transactional repository
+	if err := fn(txRepo); err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return fmt.Errorf("failed to rollback transaction: %w (original error: %v)", rbErr, err)
+		}
+		return err
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 // Create inserts a new user into the database.
@@ -35,7 +73,8 @@ func (r *UserRepository) Create(ctx context.Context, resource repository.Resourc
 	query := `INSERT INTO users (id, email, password, name, region, status, role, created_at, updated_at) 
 	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 
-	stmt, err := r.db.PrepareContext(ctx, query)
+	executor := r.getExecutor()
+	stmt, err := executor.PrepareContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare insert statement: %w", err)
 	}
@@ -100,7 +139,8 @@ func (r *UserRepository) List(ctx context.Context, query repository.Query) ([]re
 	queryBuilder.WriteString(fmt.Sprintf(" LIMIT $%d", argIndex))
 	args = append(args, limit)
 
-	stmt, err := r.db.PrepareContext(ctx, queryBuilder.String())
+	executor := r.getExecutor()
+	stmt, err := executor.PrepareContext(ctx, queryBuilder.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare select statement: %w", err)
 	}
@@ -133,7 +173,8 @@ func (r *UserRepository) List(ctx context.Context, query repository.Query) ([]re
 func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (repository.Resource, error) {
 	query := `SELECT * FROM users WHERE id = $1`
 
-	stmt, err := r.db.PrepareContext(ctx, query)
+	executor := r.getExecutor()
+	stmt, err := executor.PrepareContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare select statement: %w", err)
 	}
@@ -163,7 +204,8 @@ func (r *UserRepository) DeleteByID(ctx context.Context, resource repository.Res
 
 	query := `DELETE FROM users WHERE id = $1`
 
-	stmt, err := r.db.PrepareContext(ctx, query)
+	executor := r.getExecutor()
+	stmt, err := executor.PrepareContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("failed to prepare delete statement: %w", err)
 	}

@@ -18,6 +18,7 @@ type Repository interface {
 	List(ctx context.Context, query Query) (result []Resource, err error)
 	DeleteByID(ctx context.Context, resource Resource) error
 	FindByID(ctx context.Context, id uuid.UUID) (result Resource, err error) // find one
+	WithinTransaction(ctx context.Context, fn func(repo Repository) error) error
 }
 
 // Resource represents a generic resource that can be managed by the repository.
