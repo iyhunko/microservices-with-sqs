@@ -29,14 +29,13 @@ func NewProductService(repo repository.Repository, publisher *sqs.Publisher) *Pr
 func (ps *ProductService) CreateProduct(ctx context.Context, name, description string, price float64) (*model.Product, error) {
 	var createdProduct *model.Product
 
+	product := &model.Product{
+		Name:        name,
+		Description: description,
+		Price:       price,
+	}
 	// Execute product creation within a transaction
 	err := ps.repo.WithinTransaction(ctx, func(txRepo repository.Repository) error {
-		product := &model.Product{
-			Name:        name,
-			Description: description,
-			Price:       price,
-		}
-
 		created, err := txRepo.Create(ctx, product)
 		if err != nil {
 			return err
