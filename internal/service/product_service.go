@@ -43,84 +43,61 @@ func (ps *ProductService) CreateProduct(ctx context.Context, name, description s
 		Price:       price,
 	}
 
-	// If DB and eventRepo are available (outbox pattern enabled), use shared transaction across both repos
-	if ps.db != nil && ps.eventRepo != nil {
-		// Start a transaction
-		tx, err := ps.db.BeginTx(ctx, nil)
+	// Start a transaction
+	tx, err := ps.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
 		if err != nil {
-			return nil, fmt.Errorf("failed to begin transaction: %w", err)
-		}
-		defer func() {
-			if err != nil {
-				if rbErr := tx.Rollback(); rbErr != nil {
-					slog.Error("failed to rollback transaction", slog.Any("err", rbErr))
-				}
+			if rbErr := tx.Rollback(); rbErr != nil {
+				slog.Error("failed to rollback transaction", slog.Any("err", rbErr))
 			}
-		}()
-
-		// Create transactional repositories
-		txProductRepo := reposql.NewProductRepositoryWithTx(ps.db, tx)
-		txEventRepo := reposql.NewEventRepositoryWithTx(ps.db, tx)
-
-		// Create product in the transaction
-		created, err := txProductRepo.Create(ctx, product)
-		if err != nil {
-			return nil, err
 		}
+	}()
 
-		var ok bool
-		createdProduct, ok = created.(*model.Product)
-		if !ok {
-			return nil, repository.ErrInvalidType
-		}
+	// Create transactional repositories
+	txProductRepo := reposql.NewProductRepositoryWithTx(ps.db, tx)
+	txEventRepo := reposql.NewEventRepositoryWithTx(ps.db, tx)
 
-		// Create event in the same transaction (outbox pattern)
-		msg := sqs.ProductMessage{
-			Action:    "created",
-			ProductID: createdProduct.ID.String(),
-			Name:      createdProduct.Name,
-			Price:     createdProduct.Price,
-		}
-		eventData, err := json.Marshal(msg)
-		if err != nil {
-			return nil, err
-		}
+	// Create product in the transaction
+	created, err := txProductRepo.Create(ctx, product)
+	if err != nil {
+		return nil, err
+	}
 
-		event := &model.Event{
-			EventType: "product.created",
-			EventData: eventData,
-			Status:    model.EventStatusPending,
-		}
+	var ok bool
+	createdProduct, ok = created.(*model.Product)
+	if !ok {
+		return nil, repository.ErrInvalidType
+	}
 
-		_, err = txEventRepo.Create(ctx, event)
-		if err != nil {
-			return nil, err
-		}
+	// Create event in the same transaction (outbox pattern)
+	msg := sqs.ProductMessage{
+		Action:    "created",
+		ProductID: createdProduct.ID.String(),
+		Name:      createdProduct.Name,
+		Price:     createdProduct.Price,
+	}
+	eventData, err := json.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
 
-		// Commit the transaction
-		if err = tx.Commit(); err != nil {
-			return nil, fmt.Errorf("failed to commit transaction: %w", err)
-		}
-	} else {
-		// Fallback when outbox pattern is not configured: use single repository transaction
-		err := ps.repo.WithinTransaction(ctx, func(txRepo repository.Repository) error {
-			created, err := txRepo.Create(ctx, product)
-			if err != nil {
-				return err
-			}
+	event := &model.Event{
+		EventType: "product.created",
+		EventData: eventData,
+		Status:    model.EventStatusPending,
+	}
 
-			var ok bool
-			createdProduct, ok = created.(*model.Product)
-			if !ok {
-				return repository.ErrInvalidType
-			}
+	_, err = txEventRepo.Create(ctx, event)
+	if err != nil {
+		return nil, err
+	}
 
-			return nil
-		})
-
-		if err != nil {
-			return nil, err
-		}
+	// Commit the transaction
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	// Increment metrics
@@ -133,95 +110,65 @@ func (ps *ProductService) CreateProduct(ctx context.Context, name, description s
 func (ps *ProductService) DeleteProduct(ctx context.Context, id uuid.UUID) error {
 	var product *model.Product
 
-	// If DB and eventRepo are available (outbox pattern enabled), use shared transaction across both repos
-	if ps.db != nil && ps.eventRepo != nil {
-		// Start a transaction
-		tx, err := ps.db.BeginTx(ctx, nil)
+	// Start a transaction
+	tx, err := ps.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
 		if err != nil {
-			return fmt.Errorf("failed to begin transaction: %w", err)
-		}
-		defer func() {
-			if err != nil {
-				if rbErr := tx.Rollback(); rbErr != nil {
-					slog.Error("failed to rollback transaction", slog.Any("err", rbErr))
-				}
+			if rbErr := tx.Rollback(); rbErr != nil {
+				slog.Error("failed to rollback transaction", slog.Any("err", rbErr))
 			}
-		}()
-
-		// Create transactional repositories
-		txProductRepo := reposql.NewProductRepositoryWithTx(ps.db, tx)
-		txEventRepo := reposql.NewEventRepositoryWithTx(ps.db, tx)
-
-		// Find the product first to get its details for the message
-		resource, err := txProductRepo.FindByID(ctx, id)
-		if err != nil {
-			return err
 		}
+	}()
 
-		var ok bool
-		product, ok = resource.(*model.Product)
-		if !ok {
-			return repository.ErrInvalidType
-		}
+	// Create transactional repositories
+	txProductRepo := reposql.NewProductRepositoryWithTx(ps.db, tx)
+	txEventRepo := reposql.NewEventRepositoryWithTx(ps.db, tx)
 
-		// Delete the product
-		if err = txProductRepo.DeleteByID(ctx, id); err != nil {
-			return err
-		}
+	// Find the product first to get its details for the message
+	resource, err := txProductRepo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
 
-		// Create event in the same transaction (outbox pattern)
-		msg := sqs.ProductMessage{
-			Action:    "deleted",
-			ProductID: product.ID.String(),
-			Name:      product.Name,
-			Price:     product.Price,
-		}
-		eventData, err := json.Marshal(msg)
-		if err != nil {
-			return err
-		}
+	product, ok := resource.(*model.Product)
+	if !ok {
+		return repository.ErrInvalidType
+	}
 
-		event := &model.Event{
-			EventType: "product.deleted",
-			EventData: eventData,
-			Status:    model.EventStatusPending,
-		}
+	// Delete the product
+	if err = txProductRepo.DeleteByID(ctx, id); err != nil {
+		return err
+	}
 
-		_, err = txEventRepo.Create(ctx, event)
-		if err != nil {
-			return err
-		}
+	// Create event in the same transaction (outbox pattern)
+	msg := sqs.ProductMessage{
+		Action:    "deleted",
+		ProductID: product.ID.String(),
+		Name:      product.Name,
+		Price:     product.Price,
+	}
+	eventData, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
 
-		// Commit the transaction
-		if err = tx.Commit(); err != nil {
-			return fmt.Errorf("failed to commit transaction: %w", err)
-		}
-	} else {
-		// Fallback when outbox pattern is not configured: use single repository transaction
-		err := ps.repo.WithinTransaction(ctx, func(txRepo repository.Repository) error {
-			// Find the product first to get its details for the message
-			resource, err := txRepo.FindByID(ctx, id)
-			if err != nil {
-				return err
-			}
+	event := &model.Event{
+		EventType: "product.deleted",
+		EventData: eventData,
+		Status:    model.EventStatusPending,
+	}
 
-			var ok bool
-			product, ok = resource.(*model.Product)
-			if !ok {
-				return repository.ErrInvalidType
-			}
+	_, err = txEventRepo.Create(ctx, event)
+	if err != nil {
+		return err
+	}
 
-			// Delete the product
-			if err := txRepo.DeleteByID(ctx, id); err != nil {
-				return err
-			}
-
-			return nil
-		})
-
-		if err != nil {
-			return err
-		}
+	// Commit the transaction
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	// Increment metrics
