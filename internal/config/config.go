@@ -120,6 +120,13 @@ func (c *Config) validate() error {
 		return fmt.Errorf("invalid port number: %w", err)
 	}
 
+	// Validate AWS configuration
+	if err := allNonEmpty(map[string]string{
+		SQSQueueURLEnv: c.AWS.SQSQueueURL,
+	}); err != nil {
+		return fmt.Errorf("AWS configuration incomplete: %w", err)
+	}
+
 	return nil
 }
 

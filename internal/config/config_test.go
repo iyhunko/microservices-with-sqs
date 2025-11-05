@@ -17,6 +17,7 @@ func TestLoadFromEnv(t *testing.T) {
 	t.Setenv(config.DBPortEnv, "5432")
 	t.Setenv(config.HTTPServerPortEnv, "8080")
 	t.Setenv(config.MetricsServerPortEnv, "9090")
+	t.Setenv(config.SQSQueueURLEnv, "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue")
 
 	conf, err := config.LoadFromEnv()
 	require.NoError(t, err, "loading config should not return error")
@@ -29,6 +30,7 @@ func TestLoadFromEnv(t *testing.T) {
 	assert.Equal(t, "5432", conf.Database.Port, "DB Port should be '5432'")
 	assert.Equal(t, "8080", conf.HTTPServer.Port, "HTTP Server Port should be '8080'")
 	assert.Equal(t, "9090", conf.MetricsServer.Port, "Metrics Server Port should be '9090'")
+	assert.Equal(t, "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue", conf.AWS.SQSQueueURL, "SQS Queue URL should be set")
 }
 
 func TestGetEnvAsBool(t *testing.T) {
@@ -97,4 +99,21 @@ func TestAllNonEmpty(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadFromEnv_MissingSQSQueueURL(t *testing.T) {
+	t.Setenv(config.DebugModeEnv, "true")
+	t.Setenv(config.DBHostEnv, "localhost")
+	t.Setenv(config.DBUserEnv, "user")
+	t.Setenv(config.DBPassEnv, "pass")
+	t.Setenv(config.DBNameEnv, "testdb")
+	t.Setenv(config.DBPortEnv, "5432")
+	t.Setenv(config.HTTPServerPortEnv, "8080")
+	t.Setenv(config.MetricsServerPortEnv, "9090")
+	// Intentionally not setting SQSQueueURLEnv
+
+	conf, err := config.LoadFromEnv()
+	require.Error(t, err, "loading config should return error when SQS Queue URL is missing")
+	assert.Nil(t, conf, "config should be nil when validation fails")
+	assert.Contains(t, err.Error(), "AWS configuration incomplete", "error should mention AWS configuration")
 }
