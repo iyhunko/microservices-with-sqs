@@ -1,0 +1,36 @@
+package model
+
+import (
+	"encoding/json"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+// EventStatus represents the status of an event
+type EventStatus string
+
+const (
+	EventStatusPending   EventStatus = "pending"
+	EventStatusProcessed EventStatus = "processed"
+	EventStatusFailed    EventStatus = "failed"
+)
+
+// Event represents an event entity for the outbox pattern
+type Event struct {
+	ID          uuid.UUID
+	EventType   string
+	EventData   json.RawMessage
+	Status      EventStatus
+	CreatedAt   time.Time
+	ProcessedAt *time.Time
+}
+
+// InitMeta initializes the event metadata including ID and timestamp
+func (e *Event) InitMeta() {
+	e.ID = uuid.New()
+	e.CreatedAt = time.Now()
+	if e.Status == "" {
+		e.Status = EventStatusPending
+	}
+}

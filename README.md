@@ -12,6 +12,23 @@ This repository contains two microservices that communicate via AWS SQS:
 - **Database**: PostgreSQL
 - **Metrics**: Prometheus
 
+### Outbox Pattern for Reliable Event Publishing
+
+This application implements the **Outbox Pattern** to ensure atomic operations between database transactions and event publishing. This prevents data inconsistency that could occur if a product is created/deleted in the database but the corresponding event fails to publish to SQS.
+
+**How it works:**
+
+1. **Atomic Storage**: When a product is created or deleted, both the product change and the event are stored in the database within a single transaction. The event is stored in an `events` table with a `pending` status.
+
+2. **Background Worker**: An outbox worker runs every 2 seconds, polling the `events` table for pending events. It processes these events by publishing them to SQS and then marks them as `processed` or `failed`.
+
+3. **Reliability**: If the application crashes after committing the database transaction but before publishing to SQS, the event remains in the `pending` state and will be picked up by the worker on the next poll cycle. This guarantees at-least-once delivery of events.
+
+**Benefits:**
+- **Atomicity**: Database changes and event creation happen in the same transaction
+- **Reliability**: Events are never lost even if SQS is temporarily unavailable
+- **Consistency**: The system state remains consistent across database and message broker
+
 ## Prerequisites
 
 - Go 1.25.1+

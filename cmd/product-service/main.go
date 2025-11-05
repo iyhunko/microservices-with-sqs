@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -32,6 +33,8 @@ func main() {
 	// Create repositories
 	userRepository := sql.NewUserRepository(db)
 	productRepository := sql.NewProductRepository(db)
+	eventRepository := sql.NewEventRepository(db)
+	transactionalRepository := sql.NewTransactionalRepository(db)
 
 	// Initialize AWS SQS client (required for product service)
 	// SQSQueueURL is now a required configuration parameter
@@ -48,8 +51,12 @@ func main() {
 	sqsClient := sqs.NewFromConfig(awsCfg)
 	sqsPublisher := sqspkg.NewPublisher(sqsClient, conf.AWS.SQSQueueURL)
 
-	// Create services
-	productService := service.NewProductService(productRepository, sqsPublisher)
+	// Create services with outbox pattern
+	productService := service.NewProductServiceWithOutbox(productRepository, transactionalRepository, sqsPublisher)
+
+	// Start outbox worker to process pending events every 2 seconds
+	outboxWorker := service.NewOutboxWorker(eventRepository.(*sql.EventRepository), sqsPublisher, 2*time.Second)
+	go outboxWorker.Start(ctx)
 
 	// Start HTTP server
 	ctr := controller.New(conf, userRepository)
