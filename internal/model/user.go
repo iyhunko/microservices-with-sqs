@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// User represents a user entity with authentication and profile information.
 type User struct {
 	ID        uuid.UUID
 	Email     string
@@ -18,6 +19,7 @@ type User struct {
 	CreatedAt time.Time
 }
 
+// InitMeta initializes the user metadata including ID and timestamps.
 func (t *User) InitMeta() {
 	t.ID = uuid.New()
 	now := time.Now()

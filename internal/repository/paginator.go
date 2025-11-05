@@ -11,24 +11,29 @@ import (
 )
 
 var (
+	// ErrInvalidPaginationToken is returned when a pagination token cannot be decoded.
 	ErrInvalidPaginationToken = errors.New("token is invalid")
 )
 
 const (
+	// DefaultPaginationLimit is the default number of items per page.
 	DefaultPaginationLimit = 50
 	maxPaginationLimit     = 1000
 )
 
+// Paginator represents pagination state using cursor-based pagination.
 type Paginator struct {
 	LastID        uuid.UUID
 	LastCreatedAt time.Time
 }
 
+// Encode encodes the paginator state into a base64-encoded token.
 func (t Paginator) Encode() string {
 	key := fmt.Sprintf("%s,%s", t.LastCreatedAt.Format(time.RFC3339Nano), t.LastID)
 	return base64.StdEncoding.EncodeToString([]byte(key))
 }
 
+// DecodePageToken decodes a base64-encoded pagination token into a Paginator.
 func DecodePageToken(encodedToken string) (*Paginator, error) {
 	bytes, err := base64.StdEncoding.DecodeString(encodedToken)
 	if err != nil {

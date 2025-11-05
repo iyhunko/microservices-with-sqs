@@ -11,11 +11,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 )
 
+// Consumer handles consuming messages from AWS SQS.
 type Consumer struct {
 	client   *sqs.Client
 	queueURL string
 }
 
+// NewConsumer creates a new SQS Consumer with the given client and queue URL.
 func NewConsumer(client *sqs.Client, queueURL string) *Consumer {
 	return &Consumer{
 		client:   client,
@@ -23,6 +25,7 @@ func NewConsumer(client *sqs.Client, queueURL string) *Consumer {
 	}
 }
 
+// Start begins consuming messages from the SQS queue until the context is cancelled.
 func (c *Consumer) Start(ctx context.Context) error {
 	slog.Info("Starting SQS consumer", slog.String("queueURL", c.queueURL))
 

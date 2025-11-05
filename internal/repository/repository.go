@@ -30,7 +30,7 @@ type UniqueConstraintError struct {
 	Detail string
 }
 
-// NewUniqueConstraintError creates a new UniqueConstraintError with the provided detail message.
+// Error returns the error message for UniqueConstraintError.
 func (u *UniqueConstraintError) Error() string {
 	return "resource must be unique: " + u.Detail
 }

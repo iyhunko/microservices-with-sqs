@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Product represents a product entity with its properties and metadata.
 type Product struct {
 	ID          uuid.UUID
 	Name        string
@@ -15,6 +16,7 @@ type Product struct {
 	CreatedAt   time.Time
 }
 
+// InitMeta initializes the product metadata including ID and timestamps.
 func (p *Product) InitMeta() {
 	p.ID = uuid.New()
 	now := time.Now()
