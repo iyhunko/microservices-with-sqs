@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -32,6 +33,7 @@ func main() {
 	// Create repositories
 	userRepository := sql.NewUserRepository(db)
 	productRepository := sql.NewProductRepository(db)
+	eventRepository := sql.NewEventRepository(db)
 
 	// Initialize AWS SQS client (required for product service)
 	// SQSQueueURL is now a required configuration parameter
@@ -49,7 +51,7 @@ func main() {
 	sqsPublisher := sqspkg.NewPublisher(sqsClient, conf.AWS.SQSQueueURL)
 
 	// Create services
-	productService := service.NewProductService(productRepository, sqsPublisher)
+	productService := service.NewProductService(db, productRepository, eventRepository, sqsPublisher)
 
 	// Start HTTP server
 	ctr := controller.New(conf, userRepository)
@@ -73,10 +75,21 @@ func main() {
 		}
 	}()
 
+	// Start event worker (outbox pattern)
+	eventRepoTyped, ok := eventRepository.(*sql.EventRepository)
+	if !ok {
+		log.Fatal("failed to cast event repository")
+	}
+	eventWorker := service.NewEventWorker(eventRepoTyped, sqsPublisher, 2*time.Second)
+	workerCtx, workerCancel := context.WithCancel(ctx)
+	defer workerCancel()
+	go eventWorker.Start(workerCtx)
+
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
 	log.Println("Shutting down gracefully...")
+	workerCancel() // Stop the event worker
 	// TODO: stop httpServer gracefully
 }
 

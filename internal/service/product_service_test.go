@@ -73,7 +73,7 @@ func TestCreateProduct(t *testing.T) {
 
 	mockRepo.On("Create", ctx, mock.AnythingOfType("*model.Product")).Return(product, nil)
 
-	productService := service.NewProductService(mockRepo, nil)
+	productService := service.NewProductService(nil, mockRepo, nil, nil)
 
 	created, err := productService.CreateProduct(ctx, "Test Product", "Test Description", 99.99)
 
@@ -108,7 +108,7 @@ func TestDeleteProduct(t *testing.T) {
 	mockRepo.On("FindByID", ctx, productID).Return(product, nil)
 	mockRepo.On("DeleteByID", ctx, productID).Return(nil)
 
-	productService := service.NewProductService(mockRepo, nil)
+	productService := service.NewProductService(nil, mockRepo, nil, nil)
 
 	err := productService.DeleteProduct(ctx, productID)
 
@@ -130,7 +130,7 @@ func TestListProducts(t *testing.T) {
 
 	mockRepo.On("List", ctx, *query).Return(resources, nil)
 
-	productService := service.NewProductService(mockRepo, nil)
+	productService := service.NewProductService(nil, mockRepo, nil, nil)
 
 	results, err := productService.ListProducts(ctx, *query)
 
