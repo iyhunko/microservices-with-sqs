@@ -34,8 +34,8 @@ func (m *MockRepository) FindByID(ctx context.Context, id uuid.UUID) (repository
 	return args.Get(0).(repository.Resource), args.Error(1)
 }
 
-func (m *MockRepository) DeleteByID(ctx context.Context, resource repository.Resource) error {
-	args := m.Called(ctx, resource)
+func (m *MockRepository) DeleteByID(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
 	return args.Error(0)
 }
 
@@ -106,7 +106,7 @@ func TestDeleteProduct(t *testing.T) {
 		}).Return(nil)
 
 	mockRepo.On("FindByID", ctx, productID).Return(product, nil)
-	mockRepo.On("DeleteByID", ctx, product).Return(nil)
+	mockRepo.On("DeleteByID", ctx, productID).Return(nil)
 
 	productService := service.NewProductService(mockRepo, nil)
 

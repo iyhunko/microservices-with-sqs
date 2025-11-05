@@ -63,7 +63,7 @@ func TestDeleteProduct_TransactionRollback(t *testing.T) {
 		}).Return(expectedErr)
 
 	mockRepo.On("FindByID", ctx, productID).Return(product, nil)
-	mockRepo.On("DeleteByID", ctx, product).Return(expectedErr)
+	mockRepo.On("DeleteByID", ctx, productID).Return(expectedErr)
 
 	productService := service.NewProductService(mockRepo, nil)
 
@@ -128,7 +128,7 @@ func TestDeleteProduct_TransactionSuccess(t *testing.T) {
 		}).Return(nil)
 
 	mockRepo.On("FindByID", ctx, productID).Return(product, nil)
-	mockRepo.On("DeleteByID", ctx, product).Return(nil)
+	mockRepo.On("DeleteByID", ctx, productID).Return(nil)
 
 	productService := service.NewProductService(mockRepo, nil)
 

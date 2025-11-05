@@ -93,7 +93,7 @@ func (ps *ProductService) DeleteProduct(ctx context.Context, id uuid.UUID) error
 		}
 
 		// Delete the product
-		if err := txRepo.DeleteByID(ctx, product); err != nil {
+		if err := txRepo.DeleteByID(ctx, id); err != nil {
 			return err
 		}
 

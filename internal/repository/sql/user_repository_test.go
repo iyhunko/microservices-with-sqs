@@ -199,14 +199,13 @@ func TestUserRepository_DeleteByID(t *testing.T) {
 
 	t.Run("successful delete", func(t *testing.T) {
 		id := uuid.New()
-		user := &model.User{ID: id}
 
 		mock.ExpectPrepare("DELETE FROM users WHERE id").
 			ExpectExec().
 			WithArgs(id).
 			WillReturnResult(sqlmock.NewResult(0, 1))
 
-		err := repo.DeleteByID(ctx, user)
+		err := repo.DeleteByID(ctx, id)
 		require.NoError(t, err)
 
 		assert.NoError(t, mock.ExpectationsWereMet())
@@ -214,14 +213,13 @@ func TestUserRepository_DeleteByID(t *testing.T) {
 
 	t.Run("user not found", func(t *testing.T) {
 		id := uuid.New()
-		user := &model.User{ID: id}
 
 		mock.ExpectPrepare("DELETE FROM users WHERE id").
 			ExpectExec().
 			WithArgs(id).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		err := repo.DeleteByID(ctx, user)
+		err := repo.DeleteByID(ctx, id)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "user not found")
 

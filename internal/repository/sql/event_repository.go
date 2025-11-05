@@ -12,19 +12,19 @@ import (
 	"github.com/iyhunko/microservices-with-sqs/internal/repository"
 )
 
-// ProductRepository implements the Repository interface for Product entities.
-type ProductRepository struct {
+// EventRepository implements the Repository interface for Event entities.
+type EventRepository struct {
 	db  *sql.DB
 	txn *sql.Tx
 }
 
-// NewProductRepository creates a new ProductRepository instance.
-func NewProductRepository(db *sql.DB) repository.Repository {
-	return &ProductRepository{db: db}
+// NewEventRepository creates a new EventRepository instance.
+func NewEventRepository(db *sql.DB) repository.Repository {
+	return &EventRepository{db: db}
 }
 
 // getExecutor returns the active executor (transaction if exists, otherwise db)
-func (r *ProductRepository) getExecutor() dbExecutor {
+func (r *EventRepository) getExecutor() dbExecutor {
 	if r.txn != nil {
 		return r.txn
 	}
@@ -32,14 +32,14 @@ func (r *ProductRepository) getExecutor() dbExecutor {
 }
 
 // WithinTransaction executes a function within a database transaction
-func (r *ProductRepository) WithinTransaction(ctx context.Context, fn func(repo repository.Repository) error) error {
+func (r *EventRepository) WithinTransaction(ctx context.Context, fn func(repo repository.Repository) error) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
 	// Create a new repository instance with the transaction
-	txRepo := &ProductRepository{
+	txRepo := &EventRepository{
 		db:  r.db,
 		txn: tx,
 	}
@@ -60,16 +60,16 @@ func (r *ProductRepository) WithinTransaction(ctx context.Context, fn func(repo 
 	return nil
 }
 
-// Create inserts a new product into the database.
-func (r *ProductRepository) Create(ctx context.Context, resource repository.Resource) (repository.Resource, error) {
-	product, ok := resource.(*model.Product)
+// Create inserts a new event into the database.
+func (r *EventRepository) Create(ctx context.Context, resource repository.Resource) (repository.Resource, error) {
+	event, ok := resource.(*model.Event)
 	if !ok {
-		return nil, errors.New("resource must be a *model.Product")
+		return nil, errors.New("resource must be a *model.Event")
 	}
 
-	product.InitMeta()
+	event.InitMeta()
 
-	query := `INSERT INTO products (id, name, description, price, created_at, updated_at) 
+	query := `INSERT INTO events (id, event_type, event_data, status, created_at, processed_at) 
 	          VALUES ($1, $2, $3, $4, $5, $6)`
 
 	executor := r.getExecutor()
@@ -79,18 +79,18 @@ func (r *ProductRepository) Create(ctx context.Context, resource repository.Reso
 	}
 	defer stmt.Close()
 
-	_, err = stmt.ExecContext(ctx, product.ID, product.Name, product.Description, product.Price, product.CreatedAt, product.UpdatedAt)
+	_, err = stmt.ExecContext(ctx, event.ID, event.EventType, event.EventData, event.Status, event.CreatedAt, event.ProcessedAt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to insert product: %w", err)
+		return nil, fmt.Errorf("failed to insert event: %w", err)
 	}
 
-	return product, nil
+	return event, nil
 }
 
-// List retrieves products from the database based on the provided query.
-func (r *ProductRepository) List(ctx context.Context, query repository.Query) ([]repository.Resource, error) {
+// List retrieves events from the database based on the provided query.
+func (r *EventRepository) List(ctx context.Context, query repository.Query) ([]repository.Resource, error) {
 	var queryBuilder strings.Builder
-	queryBuilder.WriteString("SELECT * FROM products WHERE 1=1")
+	queryBuilder.WriteString("SELECT * FROM events WHERE 1=1")
 
 	var args []interface{}
 	argIndex := 1
@@ -122,30 +122,30 @@ func (r *ProductRepository) List(ctx context.Context, query repository.Query) ([
 
 	rows, err := stmt.QueryContext(ctx, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query products: %w", err)
+		return nil, fmt.Errorf("failed to query events: %w", err)
 	}
 	defer rows.Close()
 
-	var products []repository.Resource
+	var events []repository.Resource
 	for rows.Next() {
-		var product model.Product
-		err := rows.Scan(&product.ID, &product.Name, &product.Description, &product.Price, &product.CreatedAt, &product.UpdatedAt)
+		var event model.Event
+		err := rows.Scan(&event.ID, &event.EventType, &event.EventData, &event.Status, &event.CreatedAt, &event.ProcessedAt)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan product: %w", err)
+			return nil, fmt.Errorf("failed to scan event: %w", err)
 		}
-		products = append(products, &product)
+		events = append(events, &event)
 	}
 
 	if err = rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
-	return products, nil
+	return events, nil
 }
 
-// FindByID retrieves a single product by ID.
-func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (repository.Resource, error) {
-	query := `SELECT * FROM products WHERE id = $1`
+// FindByID retrieves a single event by ID.
+func (r *EventRepository) FindByID(ctx context.Context, id uuid.UUID) (repository.Resource, error) {
+	query := `SELECT * FROM events WHERE id = $1`
 
 	executor := r.getExecutor()
 	stmt, err := executor.PrepareContext(ctx, query)
@@ -154,23 +154,23 @@ func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (reposit
 	}
 	defer stmt.Close()
 
-	var result model.Product
+	var result model.Event
 	err = stmt.QueryRowContext(ctx, id).Scan(
-		&result.ID, &result.Name, &result.Description, &result.Price, &result.CreatedAt, &result.UpdatedAt,
+		&result.ID, &result.EventType, &result.EventData, &result.Status, &result.CreatedAt, &result.ProcessedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("product not found: %w", err)
+			return nil, fmt.Errorf("event not found: %w", err)
 		}
-		return nil, fmt.Errorf("failed to query product: %w", err)
+		return nil, fmt.Errorf("failed to query event: %w", err)
 	}
 
 	return &result, nil
 }
 
-// DeleteByID deletes a product by ID.
-func (r *ProductRepository) DeleteByID(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM products WHERE id = $1`
+// DeleteByID deletes an event by ID.
+func (r *EventRepository) DeleteByID(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM events WHERE id = $1`
 
 	executor := r.getExecutor()
 	stmt, err := executor.PrepareContext(ctx, query)
@@ -181,7 +181,7 @@ func (r *ProductRepository) DeleteByID(ctx context.Context, id uuid.UUID) error 
 
 	result, err := stmt.ExecContext(ctx, id)
 	if err != nil {
-		return fmt.Errorf("failed to delete product: %w", err)
+		return fmt.Errorf("failed to delete event: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -190,7 +190,7 @@ func (r *ProductRepository) DeleteByID(ctx context.Context, id uuid.UUID) error 
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("product not found")
+		return fmt.Errorf("event not found")
 	}
 
 	return nil
