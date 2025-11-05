@@ -20,7 +20,7 @@ func TestUserRepository_Create(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	repo := NewRepository(db)
+	repo := NewUserRepository(db)
 	ctx := context.Background()
 
 	t.Run("successful creation", func(t *testing.T) {
@@ -87,7 +87,7 @@ func TestUserRepository_FindByID(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	repo := NewRepository(db)
+	repo := NewUserRepository(db)
 	ctx := context.Background()
 
 	t.Run("successful find", func(t *testing.T) {
@@ -136,7 +136,7 @@ func TestUserRepository_List(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	repo := NewRepository(db)
+	repo := NewUserRepository(db)
 	ctx := context.Background()
 
 	t.Run("list without filters", func(t *testing.T) {
@@ -194,7 +194,7 @@ func TestUserRepository_DeleteByID(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	repo := NewRepository(db)
+	repo := NewUserRepository(db)
 	ctx := context.Background()
 
 	t.Run("successful delete", func(t *testing.T) {

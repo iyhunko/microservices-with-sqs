@@ -29,7 +29,7 @@ func main() {
 	handleErr("starting database", err)
 
 	// Create repositories
-	userRepository := sql.NewRepository(db)
+	userRepository := sql.NewUserRepository(db)
 	productRepository := sql.NewProductRepository(db)
 
 	// Initialize AWS SQS client
