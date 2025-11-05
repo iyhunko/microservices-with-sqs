@@ -55,9 +55,9 @@ func (r *UserRepository) Create(ctx context.Context, resource repository.Resourc
 // List retrieves users from the database based on the provided query.
 func (r *UserRepository) List(ctx context.Context, query repository.Query) ([]repository.Resource, error) {
 	var queryBuilder strings.Builder
-	queryBuilder.WriteString("SELECT id, email, password, name, region, status, role, created_at, updated_at FROM users WHERE 1=1")
+	queryBuilder.WriteString("SELECT * FROM users WHERE 1=1")
 
-	args := []interface{}{}
+	var args []interface{}
 	argIndex := 1
 
 	// Apply query filters
@@ -130,14 +130,8 @@ func (r *UserRepository) List(ctx context.Context, query repository.Query) ([]re
 }
 
 // FindByID retrieves a single user by ID.
-func (r *UserRepository) FindByID(ctx context.Context, resource repository.Resource) (repository.Resource, error) {
-	user, ok := resource.(*model.User)
-	if !ok {
-		return nil, errors.New("resource must be a *model.User")
-	}
-
-	query := `SELECT id, email, password, name, region, status, role, created_at, updated_at 
-	          FROM users WHERE id = $1`
+func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (repository.Resource, error) {
+	query := `SELECT * FROM users WHERE id = $1`
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
@@ -146,7 +140,7 @@ func (r *UserRepository) FindByID(ctx context.Context, resource repository.Resou
 	defer stmt.Close()
 
 	var result model.User
-	err = stmt.QueryRowContext(ctx, user.ID).Scan(
+	err = stmt.QueryRowContext(ctx, id).Scan(
 		&result.ID, &result.Email, &result.Password, &result.Name, &result.Region,
 		&result.Status, &result.Role, &result.CreatedAt, &result.UpdatedAt,
 	)

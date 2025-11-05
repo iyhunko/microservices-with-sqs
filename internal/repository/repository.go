@@ -1,13 +1,16 @@
 package repository
 
-import "context"
+import (
+	"context"
+	"github.com/google/uuid"
+)
 
 // Repository defines the interface for a generic repository that can manage resources.
 type Repository interface {
 	Create(ctx context.Context, resource Resource) (result Resource, err error)
 	List(ctx context.Context, query Query) (result []Resource, err error)
 	DeleteByID(ctx context.Context, resource Resource) error
-	FindByID(ctx context.Context, resource Resource) (result Resource, err error) // find one
+	FindByID(ctx context.Context, id uuid.UUID) (result Resource, err error) // find one
 }
 
 // Resource represents a generic resource that can be managed by the repository.
