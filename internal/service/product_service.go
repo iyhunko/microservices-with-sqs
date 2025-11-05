@@ -43,7 +43,7 @@ func (ps *ProductService) CreateProduct(ctx context.Context, name, description s
 		Price:       price,
 	}
 
-	// If DB is available (production), use shared transaction across both repos
+	// If DB and eventRepo are available (outbox pattern enabled), use shared transaction across both repos
 	if ps.db != nil && ps.eventRepo != nil {
 		// Start a transaction
 		tx, err := ps.db.BeginTx(ctx, nil)
@@ -102,7 +102,7 @@ func (ps *ProductService) CreateProduct(ctx context.Context, name, description s
 			return nil, fmt.Errorf("failed to commit transaction: %w", err)
 		}
 	} else {
-		// Fallback for tests: use single repository transaction
+		// Fallback when outbox pattern is not configured: use single repository transaction
 		err := ps.repo.WithinTransaction(ctx, func(txRepo repository.Repository) error {
 			created, err := txRepo.Create(ctx, product)
 			if err != nil {
@@ -133,7 +133,7 @@ func (ps *ProductService) CreateProduct(ctx context.Context, name, description s
 func (ps *ProductService) DeleteProduct(ctx context.Context, id uuid.UUID) error {
 	var product *model.Product
 
-	// If DB is available (production), use shared transaction across both repos
+	// If DB and eventRepo are available (outbox pattern enabled), use shared transaction across both repos
 	if ps.db != nil && ps.eventRepo != nil {
 		// Start a transaction
 		tx, err := ps.db.BeginTx(ctx, nil)
@@ -197,7 +197,7 @@ func (ps *ProductService) DeleteProduct(ctx context.Context, id uuid.UUID) error
 			return fmt.Errorf("failed to commit transaction: %w", err)
 		}
 	} else {
-		// Fallback for tests: use single repository transaction
+		// Fallback when outbox pattern is not configured: use single repository transaction
 		err := ps.repo.WithinTransaction(ctx, func(txRepo repository.Repository) error {
 			// Find the product first to get its details for the message
 			resource, err := txRepo.FindByID(ctx, id)

@@ -102,4 +102,3 @@ func (ew *EventWorker) processEvent(ctx context.Context, event *model.Event) err
 	return nil
 }
 
-
