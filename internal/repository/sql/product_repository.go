@@ -23,6 +23,11 @@ func NewProductRepository(db *sql.DB) repository.Repository {
 	return &ProductRepository{db: db}
 }
 
+// NewProductRepositoryWithTx creates a new ProductRepository instance with an existing transaction.
+func NewProductRepositoryWithTx(db *sql.DB, tx *sql.Tx) repository.Repository {
+	return &ProductRepository{db: db, txn: tx}
+}
+
 // getExecutor returns the active executor (transaction if exists, otherwise db)
 func (r *ProductRepository) getExecutor() dbExecutor {
 	if r.txn != nil {

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/iyhunko/microservices-with-sqs/internal/model"
@@ -21,6 +22,11 @@ type EventRepository struct {
 // NewEventRepository creates a new EventRepository instance.
 func NewEventRepository(db *sql.DB) repository.Repository {
 	return &EventRepository{db: db}
+}
+
+// NewEventRepositoryWithTx creates a new EventRepository instance with an existing transaction.
+func NewEventRepositoryWithTx(db *sql.DB, tx *sql.Tx) repository.Repository {
+	return &EventRepository{db: db, txn: tx}
 }
 
 // getExecutor returns the active executor (transaction if exists, otherwise db)
@@ -94,6 +100,13 @@ func (r *EventRepository) List(ctx context.Context, query repository.Query) ([]r
 
 	var args []interface{}
 	argIndex := 1
+
+	// Apply status filter if provided
+	if status, ok := query.Values[repository.StatusField]; ok {
+		queryBuilder.WriteString(fmt.Sprintf(" AND status = $%d", argIndex))
+		args = append(args, status)
+		argIndex++
+	}
 
 	// Apply pagination
 	if query.Paginator != nil {
@@ -182,6 +195,40 @@ func (r *EventRepository) DeleteByID(ctx context.Context, id uuid.UUID) error {
 	result, err := stmt.ExecContext(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete event: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("event not found")
+	}
+
+	return nil
+}
+
+// UpdateStatus updates the status of an event by ID.
+func (r *EventRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status model.EventStatus) error {
+	query := `UPDATE events SET status = $1, processed_at = $2 WHERE id = $3`
+
+	executor := r.getExecutor()
+	stmt, err := executor.PrepareContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare update statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var processedAt interface{}
+	if status == model.EventStatusProcessed || status == model.EventStatusFailed {
+		now := time.Now()
+		processedAt = &now
+	}
+
+	result, err := stmt.ExecContext(ctx, status, processedAt, id)
+	if err != nil {
+		return fmt.Errorf("failed to update event status: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()

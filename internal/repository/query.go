@@ -19,6 +19,8 @@ const (
 	Region QueryField = "region"
 	// CreatedAtField represents the created_at query field.
 	CreatedAtField QueryField = "created_at"
+	// StatusField represents the status query field.
+	StatusField QueryField = "status"
 )
 
 // Query represents a database query with filters and pagination options.
