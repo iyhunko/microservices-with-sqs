@@ -2,7 +2,14 @@ package repository
 
 import (
 	"context"
+	"errors"
+
 	"github.com/google/uuid"
+)
+
+var (
+	// ErrInvalidType is returned when a type assertion fails for a repository Resource
+	ErrInvalidType = errors.New("invalid resource type")
 )
 
 // Repository defines the interface for a generic repository that can manage resources.

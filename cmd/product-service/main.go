@@ -33,7 +33,8 @@ func main() {
 	userRepository := sql.NewUserRepository(db)
 	productRepository := sql.NewProductRepository(db)
 
-	// Initialize AWS SQS client
+	// Initialize AWS SQS client (required for product service)
+	// SQSQueueURL is now a required configuration parameter
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx,
 		awsconfig.WithRegion(conf.AWS.Region),
 	)

@@ -35,7 +35,10 @@ func (ps *ProductService) CreateProduct(ctx context.Context, name, description s
 		return nil, err
 	}
 
-	createdProduct := created.(*model.Product)
+	createdProduct, ok := created.(*model.Product)
+	if !ok {
+		return nil, repository.ErrInvalidType
+	}
 
 	// Increment metrics
 	metrics.ProductsCreated.Inc()
@@ -64,7 +67,10 @@ func (ps *ProductService) DeleteProduct(ctx context.Context, id uuid.UUID) error
 		return err
 	}
 
-	product := resource.(*model.Product)
+	product, ok := resource.(*model.Product)
+	if !ok {
+		return repository.ErrInvalidType
+	}
 
 	// Delete the product
 	if err := ps.repo.DeleteByID(ctx, product); err != nil {
