@@ -100,14 +100,14 @@ func TestListProducts(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(MockRepository)
 
-	products := []repository.Resource{
+	resources := []repository.Resource{
 		&model.Product{ID: uuid.New(), Name: "Product 1", Price: 10.0},
 		&model.Product{ID: uuid.New(), Name: "Product 2", Price: 20.0},
 	}
 
 	query := repository.NewQuery()
 
-	mockRepo.On("List", ctx, *query).Return(products, nil)
+	mockRepo.On("List", ctx, *query).Return(resources, nil)
 
 	productService := service.NewProductService(mockRepo, nil)
 
@@ -115,6 +115,8 @@ func TestListProducts(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Len(t, results, 2)
+	assert.Equal(t, "Product 1", results[0].Name)
+	assert.Equal(t, "Product 2", results[1].Name)
 
 	mockRepo.AssertExpectations(t)
 }

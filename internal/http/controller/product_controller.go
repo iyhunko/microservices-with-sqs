@@ -10,22 +10,26 @@ import (
 	"github.com/iyhunko/microservices-with-sqs/internal/service"
 )
 
+// ProductController handles HTTP requests for product operations.
 type ProductController struct {
 	productService *service.ProductService
 }
 
+// NewProductController creates a new ProductController with the given product service.
 func NewProductController(productService *service.ProductService) *ProductController {
 	return &ProductController{
 		productService: productService,
 	}
 }
 
+// CreateProductRequest represents the request body for creating a product.
 type CreateProductRequest struct {
 	Name        string  `json:"name" binding:"required"`
 	Description string  `json:"description"`
 	Price       float64 `json:"price" binding:"required,gt=0"`
 }
 
+// ProductResponse represents the response body for a product.
 type ProductResponse struct {
 	ID          string  `json:"id"`
 	Name        string  `json:"name"`
@@ -35,6 +39,7 @@ type ProductResponse struct {
 	UpdatedAt   string  `json:"updated_at"`
 }
 
+// CreateProduct handles the HTTP POST request for creating a new product.
 func (pc *ProductController) CreateProduct(c *gin.Context) {
 	var req CreateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -51,6 +56,7 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 	c.JSON(http.StatusCreated, toProductResponse(createdProduct))
 }
 
+// DeleteProduct handles the HTTP DELETE request for deleting a product by ID.
 func (pc *ProductController) DeleteProduct(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := uuid.Parse(idParam)
@@ -67,16 +73,19 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "product deleted successfully"})
 }
 
+// ListProductsRequest represents the query parameters for listing products.
 type ListProductsRequest struct {
 	Limit int32  `form:"limit"`
 	Token string `form:"token"`
 }
 
+// ListProductsResponse represents the response body for listing products.
 type ListProductsResponse struct {
 	Products      []ProductResponse `json:"products"`
 	NextPageToken string            `json:"next_page_token,omitempty"`
 }
 
+// ListProducts handles the HTTP GET request for listing products with pagination.
 func (pc *ProductController) ListProducts(c *gin.Context) {
 	var req ListProductsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -90,25 +99,24 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 		return
 	}
 
-	resources, err := pc.productService.ListProducts(c.Request.Context(), *query)
+	products, err := pc.productService.ListProducts(c.Request.Context(), *query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list products"})
 		return
 	}
 
-	var products []ProductResponse
-	for _, resource := range resources {
-		product := resource.(*model.Product)
-		products = append(products, toProductResponse(product))
+	var productResponses []ProductResponse
+	for _, product := range products {
+		productResponses = append(productResponses, toProductResponse(product))
 	}
 
 	response := ListProductsResponse{
-		Products: products,
+		Products: productResponses,
 	}
 
 	// Generate next page token if we have results
-	if len(resources) > 0 {
-		lastProduct := resources[len(resources)-1].(*model.Product)
+	if len(products) > 0 {
+		lastProduct := products[len(products)-1]
 		paginator := repository.Paginator{
 			LastID:        lastProduct.ID,
 			LastCreatedAt: lastProduct.CreatedAt,
