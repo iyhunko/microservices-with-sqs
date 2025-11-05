@@ -36,7 +36,7 @@ type ProductMessage struct {
 func (p *Publisher) PublishProductMessage(ctx context.Context, msg ProductMessage) error {
 	messageBody, err := json.Marshal(msg)
 	if err != nil {
-		slog.Error("Failed to marshal message", slog.Any("err", err), slog.Any("msg", msg))
+		slog.Error("Failed to marshal message", slog.Any("err", err), slog.String("action", msg.Action), slog.String("product_id", msg.ProductID))
 		return fmt.Errorf("failed to marshal message: %w", err)
 	}
 
