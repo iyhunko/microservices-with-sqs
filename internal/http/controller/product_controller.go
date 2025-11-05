@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -73,7 +73,7 @@ func (pc *ProductController) CreateProduct(c *gin.Context) {
 		}
 		if err := pc.publisher.PublishProductMessage(c.Request.Context(), msg); err != nil {
 			// Log error but don't fail the request
-			fmt.Printf("Failed to send SQS message: %v\n", err)
+			slog.Error("Failed to send SQS message", slog.Any("err", err), slog.String("action", "created"), slog.String("product_id", createdProduct.ID.String()))
 		}
 	}
 
@@ -116,7 +116,7 @@ func (pc *ProductController) DeleteProduct(c *gin.Context) {
 		}
 		if err := pc.publisher.PublishProductMessage(c.Request.Context(), msg); err != nil {
 			// Log error but don't fail the request
-			fmt.Printf("Failed to send SQS message: %v\n", err)
+			slog.Error("Failed to send SQS message", slog.Any("err", err), slog.String("action", "deleted"), slog.String("product_id", product.ID.String()))
 		}
 	}
 
