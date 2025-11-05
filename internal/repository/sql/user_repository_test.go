@@ -20,7 +20,7 @@ func TestUserRepository_Create(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	repo := NewRepository(db)
+	repo := NewUserRepository(db)
 	ctx := context.Background()
 
 	t.Run("successful creation", func(t *testing.T) {
@@ -87,23 +87,22 @@ func TestUserRepository_FindByID(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	repo := NewRepository(db)
+	repo := NewUserRepository(db)
 	ctx := context.Background()
 
 	t.Run("successful find", func(t *testing.T) {
 		id := uuid.New()
-		user := &model.User{ID: id}
 
 		now := time.Now()
 		rows := sqlmock.NewRows([]string{"id", "email", "password", "name", "region", "status", "role", "created_at", "updated_at"}).
 			AddRow(id, "test@example.com", "password123", "Test User", "US", "active", "user", now, now)
 
-		mock.ExpectPrepare("SELECT id, email, password, name, region, status, role, created_at, updated_at FROM users WHERE id").
+		mock.ExpectPrepare("SELECT \\* FROM users WHERE id = \\$1").
 			ExpectQuery().
 			WithArgs(id).
 			WillReturnRows(rows)
 
-		result, err := repo.FindByID(ctx, user)
+		result, err := repo.FindByID(ctx, id)
 		require.NoError(t, err)
 		assert.NotNil(t, result)
 
@@ -117,14 +116,13 @@ func TestUserRepository_FindByID(t *testing.T) {
 
 	t.Run("user not found", func(t *testing.T) {
 		id := uuid.New()
-		user := &model.User{ID: id}
 
-		mock.ExpectPrepare("SELECT id, email, password, name, region, status, role, created_at, updated_at FROM users WHERE id").
+		mock.ExpectPrepare("SELECT \\* FROM users WHERE id = \\$1").
 			ExpectQuery().
 			WithArgs(id).
 			WillReturnError(sql.ErrNoRows)
 
-		result, err := repo.FindByID(ctx, user)
+		result, err := repo.FindByID(ctx, id)
 		require.Error(t, err)
 		assert.Nil(t, result)
 		assert.Contains(t, err.Error(), "user not found")
@@ -138,7 +136,7 @@ func TestUserRepository_List(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	repo := NewRepository(db)
+	repo := NewUserRepository(db)
 	ctx := context.Background()
 
 	t.Run("list without filters", func(t *testing.T) {
@@ -153,7 +151,7 @@ func TestUserRepository_List(t *testing.T) {
 			AddRow(id1, "user1@example.com", "pass1", "User 1", "US", "active", "user", now, now).
 			AddRow(id2, "user2@example.com", "pass2", "User 2", "EU", "active", "admin", now, now)
 
-		mock.ExpectPrepare("SELECT id, email, password, name, region, status, role, created_at, updated_at FROM users").
+		mock.ExpectPrepare("SELECT \\* FROM users WHERE 1=1 ORDER BY created_at DESC, id DESC LIMIT").
 			ExpectQuery().
 			WithArgs(10).
 			WillReturnRows(rows)
@@ -175,7 +173,7 @@ func TestUserRepository_List(t *testing.T) {
 		rows := sqlmock.NewRows([]string{"id", "email", "password", "name", "region", "status", "role", "created_at", "updated_at"}).
 			AddRow(id, "user1@example.com", "pass1", "User 1", "US", "active", "user", now, now)
 
-		mock.ExpectPrepare("SELECT id, email, password, name, region, status, role, created_at, updated_at FROM users WHERE 1=1 AND region").
+		mock.ExpectPrepare("SELECT \\* FROM users WHERE 1=1 AND region = \\$1 ORDER BY created_at DESC, id DESC LIMIT").
 			ExpectQuery().
 			WithArgs("US", 10).
 			WillReturnRows(rows)
@@ -196,7 +194,7 @@ func TestUserRepository_DeleteByID(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	repo := NewRepository(db)
+	repo := NewUserRepository(db)
 	ctx := context.Background()
 
 	t.Run("successful delete", func(t *testing.T) {

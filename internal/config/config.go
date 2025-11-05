@@ -34,6 +34,12 @@ const (
 	EnvFilePath = "ENV_PATH" // only for local/test environment
 
 	DefaultEnvFilePath = ".env"
+
+	AWSRegionEnv = "AWS_REGION"
+
+	AWSEndpointEnv = "AWS_ENDPOINT"
+
+	SQSQueueURLEnv = "SQS_QUEUE_URL"
 )
 
 var (
@@ -45,6 +51,13 @@ type Config struct {
 	Database      DB
 	HTTPServer    Server
 	MetricsServer Server
+	AWS           AWSConfig
+}
+
+type AWSConfig struct {
+	Region      string
+	Endpoint    string
+	SQSQueueURL string
 }
 
 type DB struct {
@@ -150,6 +163,11 @@ func LoadFromEnv() (*Config, error) {
 		},
 		MetricsServer: Server{
 			Port: os.Getenv(MetricsServerPortEnv),
+		},
+		AWS: AWSConfig{
+			Region:      os.Getenv(AWSRegionEnv),
+			Endpoint:    os.Getenv(AWSEndpointEnv),
+			SQSQueueURL: os.Getenv(SQSQueueURLEnv),
 		},
 	}
 

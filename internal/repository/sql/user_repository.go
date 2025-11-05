@@ -18,8 +18,8 @@ type UserRepository struct {
 	db *sql.DB
 }
 
-// NewRepository creates a new UserRepository instance.
-func NewRepository(db *sql.DB) repository.Repository {
+// NewUserRepository creates a new UserRepository instance.
+func NewUserRepository(db *sql.DB) repository.Repository {
 	return &UserRepository{db: db}
 }
 
