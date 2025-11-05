@@ -16,7 +16,7 @@ var (
 type Repository interface {
 	Create(ctx context.Context, resource Resource) (result Resource, err error)
 	List(ctx context.Context, query Query) (result []Resource, err error)
-	DeleteByID(ctx context.Context, resource Resource) error
+	DeleteByID(ctx context.Context, id uuid.UUID) error
 	FindByID(ctx context.Context, id uuid.UUID) (result Resource, err error) // find one
 	WithinTransaction(ctx context.Context, fn func(repo Repository) error) error
 }

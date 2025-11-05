@@ -196,12 +196,7 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (repository
 }
 
 // DeleteByID deletes a user by ID.
-func (r *UserRepository) DeleteByID(ctx context.Context, resource repository.Resource) error {
-	user, ok := resource.(*model.User)
-	if !ok {
-		return errors.New("resource must be a *model.User")
-	}
-
+func (r *UserRepository) DeleteByID(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM users WHERE id = $1`
 
 	executor := r.getExecutor()
@@ -211,7 +206,7 @@ func (r *UserRepository) DeleteByID(ctx context.Context, resource repository.Res
 	}
 	defer stmt.Close()
 
-	result, err := stmt.ExecContext(ctx, user.ID)
+	result, err := stmt.ExecContext(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)
 	}

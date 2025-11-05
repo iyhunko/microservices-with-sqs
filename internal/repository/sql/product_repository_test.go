@@ -168,14 +168,13 @@ func TestProductRepository_DeleteByID(t *testing.T) {
 
 	t.Run("successful delete", func(t *testing.T) {
 		id := uuid.New()
-		product := &model.Product{ID: id}
 
 		mock.ExpectPrepare("DELETE FROM products WHERE id").
 			ExpectExec().
 			WithArgs(id).
 			WillReturnResult(sqlmock.NewResult(0, 1))
 
-		err := repo.DeleteByID(ctx, product)
+		err := repo.DeleteByID(ctx, id)
 		require.NoError(t, err)
 
 		assert.NoError(t, mock.ExpectationsWereMet())
@@ -183,14 +182,13 @@ func TestProductRepository_DeleteByID(t *testing.T) {
 
 	t.Run("product not found", func(t *testing.T) {
 		id := uuid.New()
-		product := &model.Product{ID: id}
 
 		mock.ExpectPrepare("DELETE FROM products WHERE id").
 			ExpectExec().
 			WithArgs(id).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		err := repo.DeleteByID(ctx, product)
+		err := repo.DeleteByID(ctx, id)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "product not found")
 

@@ -169,12 +169,7 @@ func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (reposit
 }
 
 // DeleteByID deletes a product by ID.
-func (r *ProductRepository) DeleteByID(ctx context.Context, resource repository.Resource) error {
-	product, ok := resource.(*model.Product)
-	if !ok {
-		return errors.New("resource must be a *model.Product")
-	}
-
+func (r *ProductRepository) DeleteByID(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM products WHERE id = $1`
 
 	executor := r.getExecutor()
@@ -184,7 +179,7 @@ func (r *ProductRepository) DeleteByID(ctx context.Context, resource repository.
 	}
 	defer stmt.Close()
 
-	result, err := stmt.ExecContext(ctx, product.ID)
+	result, err := stmt.ExecContext(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete product: %w", err)
 	}
