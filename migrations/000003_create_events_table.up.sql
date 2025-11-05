@@ -7,5 +7,4 @@ CREATE TABLE IF NOT EXISTS events (
     processed_at TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
 CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at DESC, id DESC);
