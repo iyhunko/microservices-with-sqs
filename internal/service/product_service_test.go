@@ -47,6 +47,11 @@ func (m *MockRepository) List(ctx context.Context, query repository.Query) ([]re
 	return args.Get(0).([]repository.Resource), args.Error(1)
 }
 
+func (m *MockRepository) WithinTransaction(ctx context.Context, fn func(repo repository.Repository) error) error {
+	args := m.Called(ctx, fn)
+	return args.Error(0)
+}
+
 func TestCreateProduct(t *testing.T) {
 	ctx := context.Background()
 	mockRepo := new(MockRepository)
@@ -57,6 +62,14 @@ func TestCreateProduct(t *testing.T) {
 		Description: "Test Description",
 		Price:       99.99,
 	}
+
+	// Mock WithinTransaction to execute the function immediately
+	mockRepo.On("WithinTransaction", ctx, mock.AnythingOfType("func(repository.Repository) error")).
+		Run(func(args mock.Arguments) {
+			fn := args.Get(1).(func(repository.Repository) error)
+			// Execute the function with the mock repository
+			fn(mockRepo)
+		}).Return(nil)
 
 	mockRepo.On("Create", ctx, mock.AnythingOfType("*model.Product")).Return(product, nil)
 
@@ -83,6 +96,14 @@ func TestDeleteProduct(t *testing.T) {
 		Name:  "Test Product",
 		Price: 99.99,
 	}
+
+	// Mock WithinTransaction to execute the function immediately
+	mockRepo.On("WithinTransaction", ctx, mock.AnythingOfType("func(repository.Repository) error")).
+		Run(func(args mock.Arguments) {
+			fn := args.Get(1).(func(repository.Repository) error)
+			// Execute the function with the mock repository
+			fn(mockRepo)
+		}).Return(nil)
 
 	mockRepo.On("FindByID", ctx, productID).Return(product, nil)
 	mockRepo.On("DeleteByID", ctx, product).Return(nil)

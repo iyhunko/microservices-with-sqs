@@ -27,26 +27,37 @@ func NewProductService(repo repository.Repository, publisher *sqs.Publisher) *Pr
 
 // CreateProduct creates a new product with the provided details and publishes a notification.
 func (ps *ProductService) CreateProduct(ctx context.Context, name, description string, price float64) (*model.Product, error) {
+	var createdProduct *model.Product
+
 	product := &model.Product{
 		Name:        name,
 		Description: description,
 		Price:       price,
 	}
+	// Execute product creation within a transaction
+	err := ps.repo.WithinTransaction(ctx, func(txRepo repository.Repository) error {
+		created, err := txRepo.Create(ctx, product)
+		if err != nil {
+			return err
+		}
 
-	created, err := ps.repo.Create(ctx, product)
+		var ok bool
+		createdProduct, ok = created.(*model.Product)
+		if !ok {
+			return repository.ErrInvalidType
+		}
+
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
-	}
-
-	createdProduct, ok := created.(*model.Product)
-	if !ok {
-		return nil, repository.ErrInvalidType
 	}
 
 	// Increment metrics
 	metrics.ProductsCreated.Inc()
 
-	// Send message to SQS
+	// Send message to SQS (outside transaction)
 	if ps.publisher != nil {
 		msg := sqs.ProductMessage{
 			Action:    "created",
@@ -65,26 +76,38 @@ func (ps *ProductService) CreateProduct(ctx context.Context, name, description s
 
 // DeleteProduct deletes a product by ID and publishes a deletion notification.
 func (ps *ProductService) DeleteProduct(ctx context.Context, id uuid.UUID) error {
-	// Find the product first to get its details for the message
-	resource, err := ps.repo.FindByID(ctx, id)
+	var product *model.Product
+
+	// Execute product deletion within a transaction
+	err := ps.repo.WithinTransaction(ctx, func(txRepo repository.Repository) error {
+		// Find the product first to get its details for the message
+		resource, err := txRepo.FindByID(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		var ok bool
+		product, ok = resource.(*model.Product)
+		if !ok {
+			return repository.ErrInvalidType
+		}
+
+		// Delete the product
+		if err := txRepo.DeleteByID(ctx, product); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return err
-	}
-
-	product, ok := resource.(*model.Product)
-	if !ok {
-		return repository.ErrInvalidType
-	}
-
-	// Delete the product
-	if err := ps.repo.DeleteByID(ctx, product); err != nil {
 		return err
 	}
 
 	// Increment metrics
 	metrics.ProductsDeleted.Inc()
 
-	// Send message to SQS
+	// Send message to SQS (outside transaction)
 	if ps.publisher != nil {
 		msg := sqs.ProductMessage{
 			Action:    "deleted",
