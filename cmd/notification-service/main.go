@@ -8,9 +8,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/iyhunko/microservices-with-sqs/internal/config"
 	sqspkg "github.com/iyhunko/microservices-with-sqs/internal/sqs"
 )
@@ -23,17 +20,9 @@ func main() {
 	defer cancel()
 
 	// Initialize AWS SQS client
-	awsCfg, err := awsconfig.LoadDefaultConfig(ctx,
-		awsconfig.WithRegion(conf.AWS.Region),
-	)
-	handleErr("loading AWS config", err)
+	sqsClient, err := sqspkg.NewClient(ctx, conf.AWS.Region, conf.AWS.Endpoint)
+	handleErr("creating SQS client", err)
 
-	// Override endpoint for LocalStack if specified
-	if conf.AWS.Endpoint != "" {
-		awsCfg.BaseEndpoint = aws.String(conf.AWS.Endpoint)
-	}
-
-	sqsClient := sqs.NewFromConfig(awsCfg)
 	consumer := sqspkg.NewConsumer(sqsClient, conf.AWS.SQSQueueURL)
 
 	// Start consuming messages

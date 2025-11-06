@@ -125,7 +125,7 @@ func TestEventRepository_List(t *testing.T) {
 
 		mock.ExpectPrepare("SELECT \\* FROM events").
 			ExpectQuery().
-			WithArgs(50).
+			WithArgs(10).
 			WillReturnRows(rows)
 
 		query := repository.NewQuery()

@@ -8,9 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/gin-gonic/gin"
 	"github.com/iyhunko/microservices-with-sqs/internal/config"
 	httpAPI "github.com/iyhunko/microservices-with-sqs/internal/http"
@@ -35,17 +32,9 @@ func main() {
 	eventRepository := sql.NewEventRepository(db)
 
 	// Initialize AWS SQS client (required for product service)
-	awsCfg, err := awsconfig.LoadDefaultConfig(ctx,
-		awsconfig.WithRegion(conf.AWS.Region),
-	)
-	handleErr("loading AWS config", err)
+	sqsClient, err := sqspkg.NewClient(ctx, conf.AWS.Region, conf.AWS.Endpoint)
+	handleErr("creating SQS client", err)
 
-	// Override endpoint for LocalStack if specified
-	if conf.AWS.Endpoint != "" {
-		awsCfg.BaseEndpoint = aws.String(conf.AWS.Endpoint)
-	}
-
-	sqsClient := sqs.NewFromConfig(awsCfg)
 	sqsPublisher := sqspkg.NewPublisher(sqsClient, conf.AWS.SQSQueueURL)
 
 	// Create services

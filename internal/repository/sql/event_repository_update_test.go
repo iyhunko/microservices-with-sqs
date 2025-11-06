@@ -83,7 +83,7 @@ func TestEventRepository_ListWithStatusFilter(t *testing.T) {
 
 		mock.ExpectPrepare("SELECT \\* FROM events").
 			ExpectQuery().
-			WithArgs(string(model.EventStatusPending), 50).
+			WithArgs(string(model.EventStatusPending), 10).
 			WillReturnRows(rows)
 
 		query := repository.NewQuery().With(repository.StatusField, string(model.EventStatusPending))
