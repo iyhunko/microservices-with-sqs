@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,10 +15,10 @@ import (
 	"github.com/iyhunko/microservices-with-sqs/internal/config"
 	httpAPI "github.com/iyhunko/microservices-with-sqs/internal/http"
 	"github.com/iyhunko/microservices-with-sqs/internal/http/controller"
+	"github.com/iyhunko/microservices-with-sqs/internal/metrics"
 	"github.com/iyhunko/microservices-with-sqs/internal/repository/sql"
 	"github.com/iyhunko/microservices-with-sqs/internal/service"
 	sqspkg "github.com/iyhunko/microservices-with-sqs/internal/sqs"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -65,20 +64,7 @@ func main() {
 	}()
 
 	// Start metrics server
-	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		log.Printf("Metrics server starting on port %s", conf.MetricsServer.Port)
-		metricsServer := &http.Server{
-			Addr:              ":" + conf.MetricsServer.Port,
-			ReadHeaderTimeout: 5 * time.Second,
-			ReadTimeout:       10 * time.Second,
-			WriteTimeout:      10 * time.Second,
-			IdleTimeout:       60 * time.Second,
-		}
-		if err := metricsServer.ListenAndServe(); err != nil {
-			handleErr("listening to metrics requests", err)
-		}
-	}()
+	metrics.StartMetricsServer(conf)
 
 	// Start event worker (outbox pattern)
 	eventWorker := service.NewEventWorker(eventRepository, sqsPublisher, 2*time.Second)
