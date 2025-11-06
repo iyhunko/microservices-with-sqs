@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -68,12 +68,13 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
-	log.Println("Shutting down gracefully...")
+	slog.Info("Shutting down gracefully...")
 	workerCancel() // Stop the event worker
 }
 
 func handleErr(msg string, err error) {
 	if err != nil {
-		log.Fatalf("error while %s: %v", msg, err)
+		slog.Error("Fatal error", slog.String("context", msg), slog.Any("error", err))
+		os.Exit(1)
 	}
 }
