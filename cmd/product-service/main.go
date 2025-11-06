@@ -12,6 +12,7 @@ import (
 	"github.com/iyhunko/microservices-with-sqs/internal/config"
 	httpAPI "github.com/iyhunko/microservices-with-sqs/internal/http"
 	"github.com/iyhunko/microservices-with-sqs/internal/http/controller"
+	"github.com/iyhunko/microservices-with-sqs/internal/logger"
 	"github.com/iyhunko/microservices-with-sqs/internal/metrics"
 	"github.com/iyhunko/microservices-with-sqs/internal/repository/sql"
 	"github.com/iyhunko/microservices-with-sqs/internal/service"
@@ -19,6 +20,9 @@ import (
 )
 
 func main() {
+	// Initialize JSON logger for structured logging
+	logger.InitJSONLogger()
+
 	conf, err := config.LoadFromEnv()
 	handleErr("loading config", err)
 

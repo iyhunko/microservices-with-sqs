@@ -9,10 +9,14 @@ import (
 	"syscall"
 
 	"github.com/iyhunko/microservices-with-sqs/internal/config"
+	"github.com/iyhunko/microservices-with-sqs/internal/logger"
 	sqspkg "github.com/iyhunko/microservices-with-sqs/internal/sqs"
 )
 
 func main() {
+	// Initialize JSON logger for structured logging
+	logger.InitJSONLogger()
+
 	conf, err := config.LoadFromEnv()
 	handleErr("loading config", err)
 
