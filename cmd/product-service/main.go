@@ -76,11 +76,7 @@ func main() {
 	}()
 
 	// Start event worker (outbox pattern)
-	eventRepoTyped, ok := eventRepository.(*sql.EventRepository)
-	if !ok {
-		log.Fatal("failed to cast event repository")
-	}
-	eventWorker := service.NewEventWorker(eventRepoTyped, sqsPublisher, 2*time.Second)
+	eventWorker := service.NewEventWorker(eventRepository, sqsPublisher, 2*time.Second)
 	workerCtx, workerCancel := context.WithCancel(ctx)
 	defer workerCancel()
 	go eventWorker.Start(workerCtx)
