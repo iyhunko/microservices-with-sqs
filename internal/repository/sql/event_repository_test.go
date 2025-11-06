@@ -229,7 +229,7 @@ func TestEventRepository_WithinTransaction_Rollback(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectRollback()
 
-	err = repo.WithinTransaction(ctx, func(txRepo repository.Repository) error {
+	err = repo.WithinTransaction(ctx, func(_ repository.Repository) error {
 		return expectedErr
 	})
 

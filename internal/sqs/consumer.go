@@ -67,7 +67,7 @@ func (c *Consumer) receiveMessages(ctx context.Context) error {
 	return nil
 }
 
-func (c *Consumer) processMessage(ctx context.Context, message types.Message) error {
+func (c *Consumer) processMessage(_ context.Context, message types.Message) error {
 	if message.Body == nil {
 		return fmt.Errorf("message body is nil")
 	}
