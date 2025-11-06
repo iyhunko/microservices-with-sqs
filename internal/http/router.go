@@ -9,8 +9,6 @@ import (
 )
 
 func InitRouter(_ *config.Config, _ repository.Repository, server *gin.Engine, productCtr *controller.ProductController) *gin.Engine {
-	// httpMiddleware := middleware.New(config, repo)
-
 	// Apply global middlewares
 	server.Use(middleware.Recovery()) // Prevent panics from crashing the server
 	server.Use(middleware.CORS())     // Enable Cross-Origin Resource Sharing
