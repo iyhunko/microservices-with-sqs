@@ -28,7 +28,7 @@ func NewProductRepositoryWithTx(db *sql.DB, tx *sql.Tx) *ProductRepository {
 	return &ProductRepository{db: db, txn: tx}
 }
 
-// getExecutor returns the active executor (transaction if exists, otherwise db)
+// getExecutor returns the active executor (transaction if exists, otherwise db).
 func (r *ProductRepository) getExecutor() dbExecutor {
 	if r.txn != nil {
 		return r.txn
@@ -36,7 +36,7 @@ func (r *ProductRepository) getExecutor() dbExecutor {
 	return r.db
 }
 
-// WithinTransaction executes a function within a database transaction
+// WithinTransaction executes a function within a database transaction.
 func (r *ProductRepository) WithinTransaction(ctx context.Context, fn func(repo repository.Repository) error) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -52,7 +52,8 @@ func (r *ProductRepository) WithinTransaction(ctx context.Context, fn func(repo 
 	// Execute the function with the transactional repository
 	if err := fn(txRepo); err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
-			return fmt.Errorf("failed to rollback transaction: %w (original error: %v)", rbErr, err)
+			// Log rollback error but return original error
+			return fmt.Errorf("transaction failed (rollback error: %w): %w", rbErr, err)
 		}
 		return err
 	}
@@ -164,7 +165,7 @@ func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (reposit
 		&result.ID, &result.Name, &result.Description, &result.Price, &result.CreatedAt, &result.UpdatedAt,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("product not found: %w", err)
 		}
 		return nil, fmt.Errorf("failed to query product: %w", err)

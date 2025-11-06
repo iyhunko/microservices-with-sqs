@@ -8,7 +8,7 @@ import (
 )
 
 func InitRouter(config *config.Config, repo repository.Repository, server *gin.Engine, ctr *controller.Controller, productCtr *controller.ProductController) *gin.Engine {
-	//httpMiddleware := middleware.New(config, repo)
+	// httpMiddleware := middleware.New(config, repo)
 
 	server.GET("/ping", ctr.Ping)
 

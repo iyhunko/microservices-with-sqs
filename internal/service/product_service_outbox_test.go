@@ -163,7 +163,7 @@ func TestCreateProduct_OutboxPattern_Rollback(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-// TestEventData_SerializationFormat verifies that event data is properly serialized as ProductMessage
+// TestEventData_SerializationFormat verifies that event data is properly serialized as ProductMessage.
 func TestEventData_SerializationFormat(t *testing.T) {
 	msg := sqs.ProductMessage{
 		Action:    "created",

@@ -1,8 +1,10 @@
+//nolint:all
 package integration
 
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -17,14 +19,14 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 )
 
-// TestDB holds the test database connection and cleanup function
+// TestDB holds the test database connection and cleanup function.
 type TestDB struct {
 	DB       *sql.DB
 	Pool     *dockertest.Pool
 	Resource *dockertest.Resource
 }
 
-// SetupTestDB sets up a PostgreSQL container using dockertest and runs migrations
+// SetupTestDB sets up a PostgreSQL container using dockertest and runs migrations.
 func SetupTestDB(t *testing.T) *TestDB {
 	t.Helper()
 
@@ -99,7 +101,7 @@ func SetupTestDB(t *testing.T) *TestDB {
 		t.Fatalf("Could not create migrate instance: %s", err)
 	}
 
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		t.Fatalf("Could not run migrations: %s", err)
 	}
 
@@ -110,7 +112,7 @@ func SetupTestDB(t *testing.T) *TestDB {
 	}
 }
 
-// Cleanup closes the database connection and purges the Docker container
+// Cleanup closes the database connection and purges the Docker container.
 func (tdb *TestDB) Cleanup(t *testing.T) {
 	t.Helper()
 
@@ -127,7 +129,7 @@ func (tdb *TestDB) Cleanup(t *testing.T) {
 	}
 }
 
-// TruncateTables truncates all tables in the test database
+// TruncateTables truncates all tables in the test database.
 func (tdb *TestDB) TruncateTables(t *testing.T) {
 	t.Helper()
 

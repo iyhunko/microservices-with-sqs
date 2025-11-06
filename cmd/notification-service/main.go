@@ -2,6 +2,7 @@ package notification_service
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 	"os/signal"
@@ -37,7 +38,7 @@ func main() {
 
 	// Start consuming messages
 	go func() {
-		if err := consumer.Start(ctx); err != nil && err != context.Canceled {
+		if err := consumer.Start(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			log.Printf("Consumer error: %v", err)
 		}
 	}()

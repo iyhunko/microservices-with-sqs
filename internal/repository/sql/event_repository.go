@@ -29,7 +29,7 @@ func NewEventRepositoryWithTx(db *sql.DB, tx *sql.Tx) *EventRepository {
 	return &EventRepository{db: db, txn: tx}
 }
 
-// getExecutor returns the active executor (transaction if exists, otherwise db)
+// getExecutor returns the active executor (transaction if exists, otherwise db).
 func (r *EventRepository) getExecutor() dbExecutor {
 	if r.txn != nil {
 		return r.txn
@@ -37,7 +37,7 @@ func (r *EventRepository) getExecutor() dbExecutor {
 	return r.db
 }
 
-// WithinTransaction executes a function within a database transaction
+// WithinTransaction executes a function within a database transaction.
 func (r *EventRepository) WithinTransaction(ctx context.Context, fn func(repo repository.Repository) error) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -53,7 +53,8 @@ func (r *EventRepository) WithinTransaction(ctx context.Context, fn func(repo re
 	// Execute the function with the transactional repository
 	if err := fn(txRepo); err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
-			return fmt.Errorf("failed to rollback transaction: %w (original error: %v)", rbErr, err)
+			// Log rollback error but return original error
+			return fmt.Errorf("transaction failed (rollback error: %w): %w", rbErr, err)
 		}
 		return err
 	}
@@ -172,7 +173,7 @@ func (r *EventRepository) FindByID(ctx context.Context, id uuid.UUID) (repositor
 		&result.ID, &result.EventType, &result.EventData, &result.Status, &result.CreatedAt, &result.ProcessedAt,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("event not found: %w", err)
 		}
 		return nil, fmt.Errorf("failed to query event: %w", err)
