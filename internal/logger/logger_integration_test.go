@@ -35,14 +35,17 @@ func TestInitJSONLogger_OutputFormat(t *testing.T) {
 
 	// Read the captured output
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
-	output := buf.String()
+	_, err = buf.ReadFrom(r)
+	if err != nil {
+		t.Fatalf("Failed to read from pipe: %v", err)
+	}
+	output := buf.Bytes()
 
 	// Parse the output as JSON
 	var logEntry map[string]interface{}
-	err = json.Unmarshal(buf.Bytes(), &logEntry)
+	err = json.Unmarshal(output, &logEntry)
 	if err != nil {
-		t.Fatalf("Failed to parse log output as JSON: %v\nOutput: %s", err, output)
+		t.Fatalf("Failed to parse log output as JSON: %v\nOutput: %s", err, string(output))
 	}
 
 	// Verify expected fields
