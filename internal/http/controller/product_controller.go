@@ -105,7 +105,7 @@ func (pc *ProductController) ListProducts(c *gin.Context) {
 		return
 	}
 
-	var productResponses []ProductResponse
+	productResponses := make([]ProductResponse, 0, len(products))
 	for _, product := range products {
 		productResponses = append(productResponses, toProductResponse(product))
 	}

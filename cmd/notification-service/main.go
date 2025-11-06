@@ -1,4 +1,4 @@
-package notification_service
+package main
 
 import (
 	"context"

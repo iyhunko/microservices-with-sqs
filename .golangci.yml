@@ -258,7 +258,7 @@ linters:
     tagliatelle:
       case:
         rules:
-          json: camel
+          json: snake
         use-field-name: true
     testifylint:
       disable:

@@ -9,9 +9,9 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/golang-migrate/migrate/v4/source/file" // Register file source driver for migrations
 	"github.com/iyhunko/microservices-with-sqs/internal/config"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib" // Register pgx driver for database/sql
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 )
 
 func StartDB(ctx context.Context, dbConf config.DB) (*sql.DB, error) {
-	dbCon, err := startDBConnection(dbConf)
+	dbCon, err := startDBConnection(ctx, dbConf)
 	if err != nil {
 		slog.Error("failed to initialize DB connection", slog.Any("err", err))
 		return nil, fmt.Errorf("failed to initialize DB connection: %w", err)
@@ -33,7 +33,7 @@ func StartDB(ctx context.Context, dbConf config.DB) (*sql.DB, error) {
 	return dbCon, nil
 }
 
-func startDBConnection(conf config.DB) (*sql.DB, error) {
+func startDBConnection(ctx context.Context, conf config.DB) (*sql.DB, error) {
 	dsnTmp := "host=%s user=%s password=%s dbname=%s port=%s sslmode=disable"
 	dsn := fmt.Sprintf(dsnTmp, conf.Host, conf.User, conf.Password, conf.Name, conf.Port)
 	db, err := sql.Open("pgx", dsn)
@@ -42,7 +42,7 @@ func startDBConnection(conf config.DB) (*sql.DB, error) {
 	}
 
 	// Test the connection
-	if err := db.Ping(); err != nil {
+	if err := db.PingContext(ctx); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 

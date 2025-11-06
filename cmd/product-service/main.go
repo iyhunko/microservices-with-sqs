@@ -1,4 +1,4 @@
-package product_service
+package main
 
 import (
 	"context"
@@ -70,7 +70,14 @@ func main() {
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		log.Printf("Metrics server starting on port %s", conf.MetricsServer.Port)
-		if err := http.ListenAndServe(":"+conf.MetricsServer.Port, nil); err != nil {
+		metricsServer := &http.Server{
+			Addr:              ":" + conf.MetricsServer.Port,
+			ReadHeaderTimeout: 5 * time.Second,
+			ReadTimeout:       10 * time.Second,
+			WriteTimeout:      10 * time.Second,
+			IdleTimeout:       60 * time.Second,
+		}
+		if err := metricsServer.ListenAndServe(); err != nil {
 			handleErr("listening to metrics requests", err)
 		}
 	}()
