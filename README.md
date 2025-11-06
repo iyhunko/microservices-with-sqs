@@ -98,6 +98,13 @@ Run all tests:
 go test ./internal/...
 ```
 
+Run integration tests:
+```bash
+go test ./integration/... -v
+```
+
+**Note:** Integration tests use [dockertest](https://github.com/ory/dockertest) to automatically spin up PostgreSQL containers. Docker must be running for integration tests to work.
+
 Run tests with coverage:
 ```bash
 go test -coverprofile=cover.out ./internal/...
