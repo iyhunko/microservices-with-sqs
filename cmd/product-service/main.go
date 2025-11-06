@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,6 +12,7 @@ import (
 	"github.com/iyhunko/microservices-with-sqs/internal/config"
 	httpAPI "github.com/iyhunko/microservices-with-sqs/internal/http"
 	"github.com/iyhunko/microservices-with-sqs/internal/http/controller"
+	"github.com/iyhunko/microservices-with-sqs/internal/logger"
 	"github.com/iyhunko/microservices-with-sqs/internal/metrics"
 	"github.com/iyhunko/microservices-with-sqs/internal/repository/sql"
 	"github.com/iyhunko/microservices-with-sqs/internal/service"
@@ -19,6 +20,9 @@ import (
 )
 
 func main() {
+	// Initialize JSON logger for structured logging
+	logger.InitJSONLogger()
+
 	conf, err := config.LoadFromEnv()
 	handleErr("loading config", err)
 
@@ -64,12 +68,13 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
-	log.Println("Shutting down gracefully...")
+	slog.Info("Shutting down gracefully...")
 	workerCancel() // Stop the event worker
 }
 
 func handleErr(msg string, err error) {
 	if err != nil {
-		log.Fatalf("error while %s: %v", msg, err)
+		slog.Error("Fatal error", slog.String("context", msg), slog.Any("error", err))
+		os.Exit(1)
 	}
 }
