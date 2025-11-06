@@ -15,9 +15,13 @@ coverage:
 install-gotestsum:
 	(cd /tmp && go install gotest.tools/gotestsum@latest)
 
-test: install-gotestsum
-	rm -f cover.* junit.xml
-	env TEST_ENV=make gotestsum --format testname --junitfile junit.xml -- -tags=sqlite -coverprofile cover.out ./internal/...
+test-unit: ## Run unit tests
+	@echo "Running unit tests..."
+	@go test -v -race -short ./...
+
+test-integration: ## Run integration tests
+	@echo "Running integration tests..."
+	@go test -v -race -run Integration ./...
 
 clean:
 	rm -fR bin

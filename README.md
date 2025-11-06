@@ -93,10 +93,17 @@ Available metrics:
 
 ## Testing
 
-Run all tests:
+Run unit tests:
 ```bash
-go test ./internal/...
+make test-unit
 ```
+
+Run integration tests:
+```bash
+make test-integration
+```
+
+**Note:** Integration tests use [dockertest](https://github.com/ory/dockertest) to automatically spin up PostgreSQL containers. Docker must be running for integration tests to work.
 
 Run tests with coverage:
 ```bash
