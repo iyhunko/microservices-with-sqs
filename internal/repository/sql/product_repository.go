@@ -52,7 +52,8 @@ func (r *ProductRepository) WithinTransaction(ctx context.Context, fn func(repo 
 	// Execute the function with the transactional repository
 	if err := fn(txRepo); err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
-			return fmt.Errorf("failed to rollback transaction: %w (original error: %v)", rbErr, err)
+			// Log rollback error but return original error
+			return fmt.Errorf("transaction failed (rollback error: %v): %w", rbErr, err)
 		}
 		return err
 	}
