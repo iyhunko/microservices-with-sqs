@@ -4,6 +4,8 @@
 # output of the go coverage tool
 *.out
 cover.html
+coverage.txt
+coverage.html
 /bin/
 
 # GO workspace files
