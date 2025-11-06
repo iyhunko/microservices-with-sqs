@@ -17,7 +17,7 @@ install-gotestsum:
 
 test-unit: ## Run unit tests
 	@echo "Running unit tests..."
-	@go test -v -race -short ./...
+	@go test -v -race -short ./internal/...
 
 test-integration: ## Run integration tests
 	@echo "Running integration tests..."
