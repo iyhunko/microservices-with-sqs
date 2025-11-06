@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	// ErrInvalidType is returned when a type assertion fails for a repository Resource
+	// ErrInvalidType is returned when a type assertion fails for a repository Resource.
 	ErrInvalidType = errors.New("invalid resource type")
 )
 

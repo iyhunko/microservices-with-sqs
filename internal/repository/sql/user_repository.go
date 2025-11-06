@@ -24,7 +24,7 @@ func NewUserRepository(db *sql.DB) repository.Repository {
 	return &UserRepository{db: db}
 }
 
-// getExecutor returns the active executor (transaction if exists, otherwise db)
+// getExecutor returns the active executor (transaction if exists, otherwise db).
 func (r *UserRepository) getExecutor() dbExecutor {
 	if r.txn != nil {
 		return r.txn
@@ -32,7 +32,7 @@ func (r *UserRepository) getExecutor() dbExecutor {
 	return r.db
 }
 
-// WithinTransaction executes a function within a database transaction
+// WithinTransaction executes a function within a database transaction.
 func (r *UserRepository) WithinTransaction(ctx context.Context, fn func(repo repository.Repository) error) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -49,7 +49,7 @@ func (r *UserRepository) WithinTransaction(ctx context.Context, fn func(repo rep
 	if err := fn(txRepo); err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
 			// Log rollback error but return original error
-			return fmt.Errorf("transaction failed (rollback error: %v): %w", rbErr, err)
+			return fmt.Errorf("transaction failed (rollback error: %w): %w", rbErr, err)
 		}
 		return err
 	}

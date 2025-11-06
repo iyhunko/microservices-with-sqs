@@ -29,7 +29,7 @@ func NewEventRepositoryWithTx(db *sql.DB, tx *sql.Tx) *EventRepository {
 	return &EventRepository{db: db, txn: tx}
 }
 
-// getExecutor returns the active executor (transaction if exists, otherwise db)
+// getExecutor returns the active executor (transaction if exists, otherwise db).
 func (r *EventRepository) getExecutor() dbExecutor {
 	if r.txn != nil {
 		return r.txn
@@ -37,7 +37,7 @@ func (r *EventRepository) getExecutor() dbExecutor {
 	return r.db
 }
 
-// WithinTransaction executes a function within a database transaction
+// WithinTransaction executes a function within a database transaction.
 func (r *EventRepository) WithinTransaction(ctx context.Context, fn func(repo repository.Repository) error) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -54,7 +54,7 @@ func (r *EventRepository) WithinTransaction(ctx context.Context, fn func(repo re
 	if err := fn(txRepo); err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
 			// Log rollback error but return original error
-			return fmt.Errorf("transaction failed (rollback error: %v): %w", rbErr, err)
+			return fmt.Errorf("transaction failed (rollback error: %w): %w", rbErr, err)
 		}
 		return err
 	}
