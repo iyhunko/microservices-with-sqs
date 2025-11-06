@@ -24,7 +24,7 @@ func TestRecoveryMiddleware_Integration(t *testing.T) {
 		router.Use(middleware.Recovery())
 
 		// Add a test route that panics
-		router.GET("/test-panic", func(c *gin.Context) {
+		router.GET("/test-panic", func(_ *gin.Context) {
 			panic("simulated panic in handler")
 		})
 

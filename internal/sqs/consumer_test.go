@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// mockSQSConsumerClient is a mock implementation of the SQS client for consumer testing
+// mockSQSConsumerClient is a mock implementation of the SQS client for consumer testing.
 type mockSQSConsumerClient struct {
 	receiveMessageFunc func(ctx context.Context, params *sqs.ReceiveMessageInput, optFns ...func(*sqs.Options)) (*sqs.ReceiveMessageOutput, error)
 	deleteMessageFunc  func(ctx context.Context, params *sqs.DeleteMessageInput, optFns ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error)
@@ -99,7 +99,7 @@ func TestConsumer_deleteMessage(t *testing.T) {
 		ctx := context.Background()
 
 		mockClient := &mockSQSConsumerClient{
-			deleteMessageFunc: func(ctx context.Context, params *sqs.DeleteMessageInput, optFns ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error) {
+			deleteMessageFunc: func(_ context.Context, params *sqs.DeleteMessageInput, _ ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error) {
 				assert.Equal(t, queueURL, *params.QueueUrl)
 				assert.NotNil(t, params.ReceiptHandle)
 				return &sqs.DeleteMessageOutput{}, nil
@@ -129,7 +129,7 @@ func TestConsumer_deleteMessage(t *testing.T) {
 
 		expectedErr := errors.New("failed to delete")
 		mockClient := &mockSQSConsumerClient{
-			deleteMessageFunc: func(ctx context.Context, params *sqs.DeleteMessageInput, optFns ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error) {
+			deleteMessageFunc: func(_ context.Context, _ *sqs.DeleteMessageInput, _ ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error) {
 				return nil, expectedErr
 			},
 		}
@@ -160,7 +160,7 @@ func TestConsumer_receiveMessages(t *testing.T) {
 
 		messageBody := `{"action":"created","product_id":"123","name":"Test Product","price":99.99}`
 		mockClient := &mockSQSConsumerClient{
-			receiveMessageFunc: func(ctx context.Context, params *sqs.ReceiveMessageInput, optFns ...func(*sqs.Options)) (*sqs.ReceiveMessageOutput, error) {
+			receiveMessageFunc: func(_ context.Context, params *sqs.ReceiveMessageInput, _ ...func(*sqs.Options)) (*sqs.ReceiveMessageOutput, error) {
 				assert.Equal(t, queueURL, *params.QueueUrl)
 				assert.Equal(t, int32(10), params.MaxNumberOfMessages)
 				assert.Equal(t, int32(20), params.WaitTimeSeconds)
@@ -173,7 +173,7 @@ func TestConsumer_receiveMessages(t *testing.T) {
 					},
 				}, nil
 			},
-			deleteMessageFunc: func(ctx context.Context, params *sqs.DeleteMessageInput, optFns ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error) {
+			deleteMessageFunc: func(_ context.Context, _ *sqs.DeleteMessageInput, _ ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error) {
 				return &sqs.DeleteMessageOutput{}, nil
 			},
 		}
@@ -197,7 +197,7 @@ func TestConsumer_receiveMessages(t *testing.T) {
 
 		expectedErr := errors.New("failed to receive")
 		mockClient := &mockSQSConsumerClient{
-			receiveMessageFunc: func(ctx context.Context, params *sqs.ReceiveMessageInput, optFns ...func(*sqs.Options)) (*sqs.ReceiveMessageOutput, error) {
+			receiveMessageFunc: func(_ context.Context, _ *sqs.ReceiveMessageInput, _ ...func(*sqs.Options)) (*sqs.ReceiveMessageOutput, error) {
 				return nil, expectedErr
 			},
 		}
@@ -223,7 +223,7 @@ func TestConsumer_receiveMessages(t *testing.T) {
 		// Invalid JSON to trigger processing error
 		invalidMessageBody := `{"invalid json`
 		mockClient := &mockSQSConsumerClient{
-			receiveMessageFunc: func(ctx context.Context, params *sqs.ReceiveMessageInput, optFns ...func(*sqs.Options)) (*sqs.ReceiveMessageOutput, error) {
+			receiveMessageFunc: func(_ context.Context, _ *sqs.ReceiveMessageInput, _ ...func(*sqs.Options)) (*sqs.ReceiveMessageOutput, error) {
 				return &sqs.ReceiveMessageOutput{
 					Messages: []types.Message{
 						{

@@ -11,20 +11,20 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 )
 
-// SQSConsumerAPI defines the interface for SQS operations used by Consumer.
-type SQSConsumerAPI interface {
+// ConsumerAPI defines the interface for SQS operations used by Consumer.
+type ConsumerAPI interface {
 	ReceiveMessage(ctx context.Context, params *sqs.ReceiveMessageInput, optFns ...func(*sqs.Options)) (*sqs.ReceiveMessageOutput, error)
 	DeleteMessage(ctx context.Context, params *sqs.DeleteMessageInput, optFns ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error)
 }
 
 // Consumer handles consuming messages from AWS SQS.
 type Consumer struct {
-	client   SQSConsumerAPI
+	client   ConsumerAPI
 	queueURL string
 }
 
 // NewConsumer creates a new SQS Consumer with the given client and queue URL.
-func NewConsumer(client SQSConsumerAPI, queueURL string) *Consumer {
+func NewConsumer(client ConsumerAPI, queueURL string) *Consumer {
 	return &Consumer{
 		client:   client,
 		queueURL: queueURL,

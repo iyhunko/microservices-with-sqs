@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// mockSQSClient is a mock implementation of the SQS client for testing
+// mockSQSClient is a mock implementation of the SQS client for testing.
 type mockSQSClient struct {
 	sendMessageFunc func(ctx context.Context, params *sqs.SendMessageInput, optFns ...func(*sqs.Options)) (*sqs.SendMessageOutput, error)
 }
@@ -30,7 +30,7 @@ func TestPublisher_PublishProductMessage(t *testing.T) {
 		ctx := context.Background()
 
 		mockClient := &mockSQSClient{
-			sendMessageFunc: func(ctx context.Context, params *sqs.SendMessageInput, optFns ...func(*sqs.Options)) (*sqs.SendMessageOutput, error) {
+			sendMessageFunc: func(_ context.Context, params *sqs.SendMessageInput, _ ...func(*sqs.Options)) (*sqs.SendMessageOutput, error) {
 				assert.Equal(t, queueURL, *params.QueueUrl)
 				assert.NotNil(t, params.MessageBody)
 				return &sqs.SendMessageOutput{
@@ -65,7 +65,7 @@ func TestPublisher_PublishProductMessage(t *testing.T) {
 
 		expectedErr := errors.New("failed to send message")
 		mockClient := &mockSQSClient{
-			sendMessageFunc: func(ctx context.Context, params *sqs.SendMessageInput, optFns ...func(*sqs.Options)) (*sqs.SendMessageOutput, error) {
+			sendMessageFunc: func(_ context.Context, _ *sqs.SendMessageInput, _ ...func(*sqs.Options)) (*sqs.SendMessageOutput, error) {
 				return nil, expectedErr
 			},
 		}
