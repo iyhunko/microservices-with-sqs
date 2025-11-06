@@ -12,16 +12,24 @@ import (
 // It loads the AWS configuration from the environment and optionally sets a custom endpoint.
 func NewClient(ctx context.Context, region string, endpoint string) (*sqs.Client, error) {
 	// Load AWS configuration
-	awsCfg, err := awsconfig.LoadDefaultConfig(ctx,
+	configOptions := []func(*awsconfig.LoadOptions) error{
 		awsconfig.WithRegion(region),
-	)
-	if err != nil {
-		return nil, err
 	}
 
 	// Override endpoint for LocalStack if specified
 	if endpoint != "" {
-		awsCfg.BaseEndpoint = aws.String(endpoint)
+		customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			return aws.Endpoint{
+				URL:           endpoint,
+				SigningRegion: region,
+			}, nil
+		})
+		configOptions = append(configOptions, awsconfig.WithEndpointResolverWithOptions(customResolver))
+	}
+
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, configOptions...)
+	if err != nil {
+		return nil, err
 	}
 
 	return sqs.NewFromConfig(awsCfg), nil
