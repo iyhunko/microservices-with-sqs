@@ -164,7 +164,7 @@ func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (reposit
 		&result.ID, &result.Name, &result.Description, &result.Price, &result.CreatedAt, &result.UpdatedAt,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("product not found: %w", err)
 		}
 		return nil, fmt.Errorf("failed to query product: %w", err)

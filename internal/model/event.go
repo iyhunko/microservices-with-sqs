@@ -11,11 +11,11 @@ import (
 type EventStatus string
 
 const (
-	// EventStatusPending indicates the event has been created but not yet processed
+	// EventStatusPending indicates the event has been created but not yet processed.
 	EventStatusPending EventStatus = "pending"
-	// EventStatusProcessed indicates the event has been successfully processed
+	// EventStatusProcessed indicates the event has been successfully processed.
 	EventStatusProcessed EventStatus = "processed"
-	// EventStatusFailed indicates the event processing has failed
+	// EventStatusFailed indicates the event processing has failed.
 	EventStatusFailed EventStatus = "failed"
 )
 

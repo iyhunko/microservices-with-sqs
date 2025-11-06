@@ -172,7 +172,7 @@ func (r *EventRepository) FindByID(ctx context.Context, id uuid.UUID) (repositor
 		&result.ID, &result.EventType, &result.EventData, &result.Status, &result.CreatedAt, &result.ProcessedAt,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("event not found: %w", err)
 		}
 		return nil, fmt.Errorf("failed to query event: %w", err)

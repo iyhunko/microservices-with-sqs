@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -99,7 +100,7 @@ func SetupTestDB(t *testing.T) *TestDB {
 		t.Fatalf("Could not create migrate instance: %s", err)
 	}
 
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		t.Fatalf("Could not run migrations: %s", err)
 	}
 

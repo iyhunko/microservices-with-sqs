@@ -82,7 +82,8 @@ func (r *UserRepository) Create(ctx context.Context, resource repository.Resourc
 
 	_, err = stmt.ExecContext(ctx, user.ID, user.Email, user.Password, user.Name, user.Region, user.Status, user.Role, user.CreatedAt, user.UpdatedAt)
 	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == pqUniqueViolationErrCode {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == pqUniqueViolationErrCode {
 			return nil, &repository.UniqueConstraintError{Detail: pqErr.Detail}
 		}
 		return nil, fmt.Errorf("failed to insert user: %w", err)
@@ -186,7 +187,7 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (repository
 		&result.Status, &result.Role, &result.CreatedAt, &result.UpdatedAt,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("user not found: %w", err)
 		}
 		return nil, fmt.Errorf("failed to query user: %w", err)
