@@ -77,14 +77,11 @@ func TestClient_Integration_WithLocalStack(t *testing.T) {
 			t.Skipf("Failed to publish message (LocalStack may not be running): %v", err)
 		}
 
-		// Wait a bit for the message to be available
-		time.Sleep(100 * time.Millisecond)
-
-		// Try to receive the message
+		// Try to receive the message with long polling (waits up to 5 seconds for a message)
 		output, err := sqsClient.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 			QueueUrl:            aws.String(queueURL),
 			MaxNumberOfMessages: 10,
-			WaitTimeSeconds:     2,
+			WaitTimeSeconds:     5, // Use long polling to wait for the message
 		})
 		require.NoError(t, err)
 

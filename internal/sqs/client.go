@@ -19,10 +19,15 @@ func NewClient(ctx context.Context, region string, endpoint string) (*sqs.Client
 	// Override endpoint for LocalStack if specified
 	if endpoint != "" {
 		customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				URL:           endpoint,
-				SigningRegion: region,
-			}, nil
+			// Only override endpoint for SQS service
+			if service == sqs.ServiceID {
+				return aws.Endpoint{
+					URL:           endpoint,
+					SigningRegion: region,
+				}, nil
+			}
+			// Return default endpoint for other services
+			return aws.Endpoint{}, &aws.EndpointNotFoundError{}
 		})
 		configOptions = append(configOptions, awsconfig.WithEndpointResolverWithOptions(customResolver))
 	}
