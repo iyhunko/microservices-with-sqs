@@ -33,7 +33,7 @@ func TestProductAPI_CreateProduct_Integration(t *testing.T) {
 	router := gin.New()
 	productCtr := controller.NewProductController(productService)
 	cfg := &config.Config{}
-	httpAPI.InitRouter(cfg, nil, router, nil, productCtr)
+	httpAPI.InitRouter(cfg, nil, router, productCtr)
 
 	t.Run("create product successfully", func(t *testing.T) {
 		testDB.TruncateTables(t)
@@ -122,7 +122,7 @@ func TestProductAPI_ListProducts_Integration(t *testing.T) {
 	router := gin.New()
 	productCtr := controller.NewProductController(productService)
 	cfg := &config.Config{}
-	httpAPI.InitRouter(cfg, nil, router, nil, productCtr)
+	httpAPI.InitRouter(cfg, nil, router, productCtr)
 
 	t.Run("list products", func(t *testing.T) {
 		testDB.TruncateTables(t)
@@ -248,7 +248,7 @@ func TestProductAPI_DeleteProduct_Integration(t *testing.T) {
 	router := gin.New()
 	productCtr := controller.NewProductController(productService)
 	cfg := &config.Config{}
-	httpAPI.InitRouter(cfg, nil, router, nil, productCtr)
+	httpAPI.InitRouter(cfg, nil, router, productCtr)
 
 	t.Run("delete product successfully", func(t *testing.T) {
 		testDB.TruncateTables(t)

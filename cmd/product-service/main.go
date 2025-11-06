@@ -36,7 +36,6 @@ func main() {
 	eventRepository := sql.NewEventRepository(db)
 
 	// Initialize AWS SQS client (required for product service)
-	// SQSQueueURL is now a required configuration parameter
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx,
 		awsconfig.WithRegion(conf.AWS.Region),
 	)
@@ -54,10 +53,9 @@ func main() {
 	productService := service.NewProductService(db, productRepository, eventRepository, sqsPublisher)
 
 	// Start HTTP server
-	ctr := controller.New(conf, userRepository)
 	productCtr := controller.NewProductController(productService)
 	httpServer := gin.Default()
-	httpServer = httpAPI.InitRouter(conf, userRepository, httpServer, ctr, productCtr)
+	httpServer = httpAPI.InitRouter(conf, userRepository, httpServer, productCtr)
 
 	go func() {
 		err = httpServer.Run(":" + conf.HTTPServer.Port)
@@ -93,7 +91,6 @@ func main() {
 	<-sigChan
 	log.Println("Shutting down gracefully...")
 	workerCancel() // Stop the event worker
-	// TODO: stop httpServer gracefully
 }
 
 func handleErr(msg string, err error) {
