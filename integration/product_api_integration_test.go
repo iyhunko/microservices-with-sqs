@@ -231,8 +231,8 @@ func TestProductAPI_ListProducts_Integration(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
 
-		productsArray := response["products"]
-		assert.Nil(t, productsArray)
+		productsArray := response["products"].([]interface{})
+		assert.Empty(t, productsArray)
 	})
 }
 
