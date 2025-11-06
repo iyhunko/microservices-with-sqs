@@ -18,7 +18,7 @@ func TestRecovery(t *testing.T) {
 		router.Use(Recovery())
 
 		// Add a route that panics
-		router.GET("/panic", func(c *gin.Context) {
+		router.GET("/panic", func(_ *gin.Context) {
 			panic("test panic")
 		})
 
@@ -55,7 +55,7 @@ func TestRecovery(t *testing.T) {
 		router := gin.New()
 		router.Use(Recovery())
 
-		router.GET("/panic-string", func(c *gin.Context) {
+		router.GET("/panic-string", func(_ *gin.Context) {
 			panic("string panic message")
 		})
 
@@ -72,7 +72,7 @@ func TestRecovery(t *testing.T) {
 		router := gin.New()
 		router.Use(Recovery())
 
-		router.GET("/panic-error", func(c *gin.Context) {
+		router.GET("/panic-error", func(_ *gin.Context) {
 			panic(assert.AnError)
 		})
 
@@ -89,7 +89,7 @@ func TestRecovery(t *testing.T) {
 		router := gin.New()
 		router.Use(Recovery())
 
-		router.GET("/panic-nil", func(c *gin.Context) {
+		router.GET("/panic-nil", func(_ *gin.Context) {
 			var ptr *string
 			_ = *ptr // This will cause a panic
 		})

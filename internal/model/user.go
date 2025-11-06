@@ -25,9 +25,9 @@ func (u *User) TableName() string {
 }
 
 // InitMeta initializes the user metadata including ID and timestamps.
-func (t *User) InitMeta() {
-	t.ID = uuid.New()
+func (u *User) InitMeta() {
+	u.ID = uuid.New()
 	now := time.Now()
-	t.CreatedAt = now
-	t.UpdatedAt = now
+	u.CreatedAt = now
+	u.UpdatedAt = now
 }
