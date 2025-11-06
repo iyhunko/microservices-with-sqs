@@ -17,8 +17,8 @@ var (
 
 const (
 	// DefaultPaginationLimit is the default number of items per page.
-	DefaultPaginationLimit = 50
-	maxPaginationLimit     = 1000
+	DefaultPaginationLimit = 10
+	maxPaginationLimit     = 100
 )
 
 // Paginator represents pagination state using cursor-based pagination.

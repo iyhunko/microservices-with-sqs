@@ -10,14 +10,19 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 )
 
+// SQSPublisherAPI defines the interface for SQS operations used by Publisher.
+type SQSPublisherAPI interface {
+	SendMessage(ctx context.Context, params *sqs.SendMessageInput, optFns ...func(*sqs.Options)) (*sqs.SendMessageOutput, error)
+}
+
 // Publisher handles publishing messages to AWS SQS.
 type Publisher struct {
-	client   *sqs.Client
+	client   SQSPublisherAPI
 	queueURL string
 }
 
 // NewPublisher creates a new SQS Publisher with the given client and queue URL.
-func NewPublisher(client *sqs.Client, queueURL string) *Publisher {
+func NewPublisher(client SQSPublisherAPI, queueURL string) *Publisher {
 	return &Publisher{
 		client:   client,
 		queueURL: queueURL,
