@@ -16,6 +16,7 @@ go.work
 
 vendor/
 junit.xml
+volume/
 
 .env
 
@@ -24,5 +25,5 @@ junit.xml
 .pem
 
 /psql
-
+/volume
 
