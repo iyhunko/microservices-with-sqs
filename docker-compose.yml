@@ -1,6 +1,6 @@
 services:
-  psql:
-    container_name: psql
+  postgres:
+    container_name: postgres
     image: postgres:16
     environment:
       POSTGRES_DB: "testdb"
@@ -20,7 +20,7 @@ services:
   prometheus:
     image: prom/prometheus
     volumes:
-      - "./local/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "./local/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml"
     ports:
       - 9090:9090
 
