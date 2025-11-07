@@ -33,14 +33,14 @@ This pattern guarantees that no events are lost, even if the SQS service is temp
 3. Run `go run cmd/product-service/main.go`
 4. Run `go run cmd/notification-service/main.go`
 5. Run `sh test_api.sh` to run different requests to the product service API
-:white_check_mark: **You will see notification-service responses examples:**
-![Alt text](docs/img1.png)
-:white_check_mark: **And created prometheus metrics:**
-![Alt text](docs/img2.png)
-:white_check_mark: **Structured logs in the product-service:**
-![Alt text](docs/img3.png)
-:white_check_mark: **And events are received and logged by the notification-service:**
-![Alt text](docs/img4.png)
+6. :white_check_mark: **You will see notification-service responses examples:** 
+![Alt text](docs/images/img1.png)
+7. :white_check_mark: **And created prometheus metrics:** 
+![Alt text](docs/images/img2.png)
+8. :white_check_mark: **Structured logs in the product-service:** 
+![Alt text](docs/images/img3.png)
+9. :white_check_mark: **And events are received and logged by the notification-service:** 
+![Alt text](docs/images/img4.png)
 
 ## Prerequisites
 
