@@ -9,12 +9,6 @@ BASE_URL="http://localhost:8080"
 METRICS_URL="http://localhost:8082"
 
 echo "=== Testing Product Service API ==="
-echo
-
-# Test 1: Health check
-echo "1. Testing health check endpoint..."
-curl -s "$BASE_URL/ping" | jq .
-echo
 
 # Test 2: Create a product
 echo "2. Creating a product..."
