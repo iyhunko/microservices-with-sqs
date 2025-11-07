@@ -52,7 +52,7 @@ func TestInitJSONLogger(t *testing.T) {
 }
 
 // TestInitJSONLogger_OutputFormat verifies that InitJSONLogger sets up
-// JSON formatted output for slog
+// JSON formatted output for slog.
 func TestInitJSONLogger_OutputFormat(t *testing.T) {
 	// Save original stdout to restore later
 	oldStdout := os.Stdout
