@@ -24,19 +24,20 @@ The product service implements the **Outbox Pattern** to ensure atomic operation
 
 This pattern guarantees that no events are lost, even if the SQS service is temporarily unavailable, because the events are durably stored in the database and will be retried by the worker.
 
-**TEST TASK FLOW RUN:**
+    
+##  :heavy_exclamation_mark: :heavy_exclamation_mark: :heavy_exclamation_mark: **TEST TASK FLOW RUN AND RESULT CHECK** :heavy_exclamation_mark: :heavy_exclamation_mark: :heavy_exclamation_mark:
 1. Run `make docker-compose`
 2. Create queue in the LocalStack: `awslocal sqs create-queue --queue-name product-notifications`
 3. Run `go run cmd/product-service/main.go`
 4. Run `go run cmd/notification-service/main.go`
 5. Run `sh test_api.sh` to run different requests to the product service API
-You will see responses examples.
+:white_check_mark: **You will see notification-service responses examples:**
 ![Alt text](docs/img1.png)
-And created prometheus metrics:
+:white_check_mark: **And created prometheus metrics:**
 ![Alt text](docs/img2.png)
-Structured logs in the product-service:
+:white_check_mark: **Structured logs in the product-service:**
 ![Alt text](docs/img3.png)
-And events are received and logged by the notification-service:
+:white_check_mark: **And events are received and logged by the notification-service:**
 ![Alt text](docs/img4.png)
 
 ## Prerequisites
